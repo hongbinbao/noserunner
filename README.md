@@ -24,22 +24,23 @@ runner based on python nose testing framework
 	  --reportserver        Enable the report server feature. Default is disable
 
 
-### test case script package
-├── client.py                                       #nose plugin module
-├── planloader.py                                   #nose plugin module
-├── reporter.py                                     #nose plugin module
-├── runtests.py                                     #launch script
-├── scripts                                         #test case package
-│   ├── __init__.py
-│   ├── pics                                        #test case related sources
-│   │   ├── browser.BrowserTest.testOpenBrowser
-│   │   │   ├── baidu_logo.png
-│   │   │   └── baidu_logo.(x267y267w554h206).png
-│   │   └── phone.PhoneTest.testCall
-│   └── testcases                                   #unittest test case package
-│       ├── __init__.py 
-│       ├── browser.py                              #test case for browser
-│       ├── phone.py                                #test case for phone
-└── server.config                                   #config file (server, account, device...)
-├── plan                                            #test case plan
+### Test case script package
+
+    ├── client.py                                       #nose plugin module
+    ├── planloader.py                                   #nose plugin module
+    ├── reporter.py                                     #nose plugin module
+    ├── runtests.py                                     #launch script
+    ├── scripts                                         #test case package
+    │   ├── __init__.py
+    │   ├── pics                                        #test case related sources
+    │   │   ├── browser.BrowserTest.testOpenBrowser
+    │   │   │   ├── baidu_logo.png
+    │   │   │   └── baidu_logo.(x267y267w554h206).png
+    │   │   └── phone.PhoneTest.testCall
+    │   └── testcases                                   #unittest test case package
+    │       ├── __init__.py 
+    │       ├── browser.py                              #test case for browser
+    │       ├── phone.py                                #test case for phone
+    └── server.config                                   #config file (server, account, device...)
+    ├── plan                                            #test case plan
 
