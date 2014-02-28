@@ -24,7 +24,7 @@ runner based on python nose testing framework
 	  --reportserver        Enable the report server feature. Default is disable
 
 
-### Test case script package
+### demo
 
     ├── client.py                                       #nose plugin module
     ├── planloader.py                                   #nose plugin module
