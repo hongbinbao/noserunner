@@ -282,7 +282,11 @@ class ReporterPlugin(nose.plugins.Plugin):
             case_report_dir = _mkdir(join(tmp, case_report_dir_name))
             #last step snapshot
             save(case_report_dir)
-            shutil.move(case_report_dir, self._fail_report_path)
+            try:
+                shutil.move(case_report_dir, self._fail_report_path)
+            except:
+                #if fail again
+                pass
             screenshot_at_failure = join(case_report_dir_path, FAILURE_SNAPSHOT_NAME)
             log = join(case_report_dir_path, 'log.zip')
 
@@ -319,7 +323,11 @@ class ReporterPlugin(nose.plugins.Plugin):
             case_report_dir = _mkdir(join(tmp, case_report_dir_name))
             #last step snapshot
             save(case_report_dir)
-            shutil.move(case_report_dir, self._error_report_path)
+            try:
+                shutil.move(case_report_dir, self._error_report_path)
+            except:
+                #if error again
+                pass
             screenshot_at_failure = join(case_report_dir_path, FAILURE_SNAPSHOT_NAME)
             log = join(case_report_dir_path, 'log.zip')
             expect = None
