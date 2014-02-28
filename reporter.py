@@ -359,8 +359,8 @@ class ReporterPlugin(nose.plugins.Plugin):
                                                   'casename': case_dir_name,
                                                   'starttime': self.case_start_time,
                                                   'endtime': reporttime(),
-                                                  'result': 'fail',
-                                                  'trace':formatOutput(case_dir_name, 'fail', err)
+                                                  'result': 'error',
+                                                  'trace':formatOutput(case_dir_name, 'error', err)
                                                   }
                                        })
 
