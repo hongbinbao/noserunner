@@ -9,7 +9,7 @@ runner based on python nose testing framework
     sudo pip install nose
     
 ### Help
-    $cd noserunner
+    $ cd noserunner
     $ python runtests.py -h
   
 ### Command-line
