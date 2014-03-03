@@ -24,7 +24,7 @@ def showUsage():
 if __name__ == '__main__':
     if '-h' in sys.argv or '--help' in sys.argv: showUsage()
     cycle = 1
-    argvs=['','--with-plan-loader', '--verbosity=2', '--with-reporter', '--loop=1']
+    argvs = ['','--with-plan-loader', '--verbosity=2', '--with-reporter', '--loop=1']
     if len(sys.argv) >= 2:
         if '--cycle' in sys.argv:
             index = sys.argv.index('--cycle')
