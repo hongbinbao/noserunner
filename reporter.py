@@ -65,6 +65,85 @@ class TestCounter(object):
     def reset(self):
         self.__tid = 0
 
+class TestCaseContext(object):
+    def __init__(self, output_failures, output_errors):
+        self.__output_failures = output_failures
+        self.__output_errors = output_errors
+        self.__case_start_time = None
+        self.__case_end_time = None
+        self.__case_dir_name = None
+        self.__user_log_dir = None
+        self.__case_report_dir_name = None
+        self.__case_report_dir_path = None
+        self.__case_report_tmp_dir = None
+        self.__screenshot_at_failure = None
+        self.__log = None
+        self.__expect = None
+
+    @property
+    def case_start_time(self):
+        return self.__case_start_time
+
+    @case_start_time.setter
+    def case_start_time(self, v):
+        self.__case_start_time = v
+
+    @property
+    def case_end_time(self):
+        return self.__case_end_time
+
+    @case_end_time.setter
+    def case_end_time(self, v):
+        self.__case_end_time = v
+
+    @property
+    def user_log_dir(self):
+        return self.__user_log_dir
+
+    @user_log_dir.setter
+    def user_log_dir(self, v):
+        self.__user_log_dir = v
+
+    @property
+    def case_dir_name(self):
+        return self.__case_dir_name
+
+    @case_dir_name.setter
+    def case_dir_name(self, v):
+        self.__case_dir_name = v
+
+    ###
+    @property
+    def case_report_dir_name(self):
+        self.__case_report_dir_name = '%s%s%s' % (self.__case_dir_name, '@', str(self.__case_start_time).replace(' ', '_'))
+        return self.__case_report_dir_name
+
+    #nose frm need
+    @property
+    def case_report_dir_path(self):
+        self.__case_report_dir_path = join(self.__output_failures, self.case_report_dir_name)
+        return self.__case_report_dir_path
+
+    @property
+    def case_report_tmp_dir(self):
+        self.__case_report_tmp_dir = join(join(os.getcwd(), 'tmp'), self.case_report_dir_name)
+        #sys.stderr.write(self.__case_report_tmp_dir)
+        return self.__case_report_tmp_dir
+
+    @property
+    def screenshot_at_failure(self):
+        self.__screenshot_at_failure = join(self.case_report_dir_path, FAILURE_SNAPSHOT_NAME)
+        return self.__screenshot_at_failure
+
+    @property
+    def log(self):
+        self.__log = join(self.case_report_dir_path, 'log.zip')
+        return self.__log
+
+    @property
+    def expect(self):
+        return self.__expect
+
 def uniqueID():
     return str(uuid.uuid1())
 
@@ -110,6 +189,7 @@ def save(path):
     '''
     pull log/snapshot from device to local report folder
     '''
+    path = _mkdir(path)
     serial = os.environ['ANDROID_SERIAL'] if os.environ.has_key('ANDROID_SERIAL') else None
     #snapshot & system log
     if serial:
@@ -120,7 +200,7 @@ def save(path):
         shell('adb shell screencap /sdcard/%s' % FAILURE_SNAPSHOT_NAME)
         shell('adb pull /sdcard/%s %s' % (FAILURE_SNAPSHOT_NAME, path))
         shell('adb logcat -v time -d > %s ' % join(path, LOG_FILE_NAME))
-    zipLog(os.path.join(path, LOG_FILE_NAME), path)
+    #zipLog(os.path.join(path, LOG_FILE_NAME), path)
 
 def writeResultToFile(output, content):
     '''
@@ -225,7 +305,6 @@ class ReporterPlugin(nose.plugins.Plugin):
         self.session_id = self.__counter.sid
         self.test_start_time = getattr(self, 'test_start_time', None)
         if not self.test_start_time:
-            #self.test_start_time = str(datetime.datetime.now())
             self.test_start_time = reporttime()
         self._report_path = _mkdir(join(join(self.opt.directory, 'report'), str(self.test_start_time).replace(' ', '_')))
         self._all_report_path = _mkdir(join(self._report_path, 'all'))
@@ -238,16 +317,30 @@ class ReporterPlugin(nose.plugins.Plugin):
         if self.opt.reportserver and not self.__report_client.created:
             self.__report_client.createSession(**session_properties)
 
+    def setTestCaseContext(self, test):
+        module_name, class_name, method_name = test.id().split('.')[-3:]
+        ctx = TestCaseContext(self._fail_report_path, self._error_report_path)
+        ctx.case_dir_name = '%s%s%s' % (class_name, '.', method_name)
+        setattr(test.context, 'contexts', ctx)
+
+
+    def getTestCaseContext(self, test):
+        return getattr(test.context, 'contexts')
+
+    def prepareTestCase(self, test):
+        sys.stderr.write('------------------------------prepareTestCase-------------\n')
+        self.setTestCaseContext(test)
+
     def startTest(self, test):
         """
         startTest: called after beforeTest(*)
         """
         self.tid = self.__counter.next()
-        ##self.case_start_time = str(datetime.datetime.now())
-        self.case_start_time = reporttime()
+        ctx = self.getTestCaseContext(test)
+        ctx.case_start_time = reporttime()
+        ctx.user_log_dir = join(ctx.case_report_tmp_dir, 'logs')
         if self.write_hashes:
-            self._write('#%s %s ' % (str(self.tid), str(self.case_start_time)))
-
+            self._write('#%s %s ' % (str(self.tid), str(ctx.case_start_time)))
 
     def stopTest(self, test):
         """
@@ -262,37 +355,14 @@ class ReporterPlugin(nose.plugins.Plugin):
         self.result_properties.clear()
         exctype, value, tb = err
 
-        module_name = test.id().split('.')[-3]
-        class_name = test.id().split('.')[-2]
-        method_name = test.id().split('.')[-1]
-        case_dir_name = '%s%s%s' % (class_name, '.', method_name)
-        case_start_time = self.case_start_time
-        case_report_dir_name = '%s%s%s' % (case_dir_name, '@', str(self.case_start_time).replace(' ', '_'))
-        case_report_dir_path = join(self._fail_report_path, case_report_dir_name)
-        screenshot_at_failure = None
-        log = None
-        expect = None
+        ctx = self.getTestCaseContext(test)
+        #common log output
+        save(ctx.user_log_dir)
+        shutil.move(ctx.case_report_tmp_dir, self._fail_report_path)
 
-        if False:
-            screenshot_at_failure = None
-            log = None
-            expect = None
-        else:
-            tmp = join(os.getcwd(), 'tmp')
-            case_report_dir = _mkdir(join(tmp, case_report_dir_name))
-            #last step snapshot
-            save(case_report_dir)
-            try:
-                shutil.move(case_report_dir, self._fail_report_path)
-            except:
-                #if fail again
-                pass
-            screenshot_at_failure = join(case_report_dir_path, FAILURE_SNAPSHOT_NAME)
-            log = join(case_report_dir_path, 'log.zip')
-
-        self.result_properties.update({'extras': {'screenshot_at_failure': screenshot_at_failure,
-                                                  'log': log,
-                                                  'expect': expect,
+        self.result_properties.update({'extras': {'screenshot_at_failure': ctx.screenshot_at_failure,
+                                                  'log': ctx.log,
+                                                  'expect': ctx.expect,
                                                   }
                                       })
 
@@ -301,55 +371,28 @@ class ReporterPlugin(nose.plugins.Plugin):
         Called on addError. To handle the failure yourself and prevent normal error processing, return a true value.
         '''
         self.result_properties.clear()
-        exctype, value, tb = err
-        module_name = test.id().split('.')[-3]
-        class_name = test.id().split('.')[-2]
-        method_name = test.id().split('.')[-1]
-        case_dir_name = '%s%s%s' % (class_name, '.', method_name)
-        case_start_time = self.case_start_time
-        case_report_dir_name = '%s%s%s' % (case_dir_name, '@', str(self.case_start_time).replace(' ', '_'))
-        case_report_dir_path = join(self._error_report_path, case_report_dir_name)
+        
+        ctx = self.getTestCaseContext(test)
+        #last step snapshot
+        save(ctx.user_log_dir)
+        shutil.move(ctx.case_report_tmp_dir, self._error_report_path)
 
-        screenshot_at_failure = None
-        log = None
-        expect = None
-
-        if False:
-            screenshot_at_failure = None
-            log = None
-            expect = None
-        else:
-            tmp = join(os.getcwd(), 'tmp')
-            case_report_dir = _mkdir(join(tmp, case_report_dir_name))
-            #last step snapshot
-            save(case_report_dir)
-            try:
-                shutil.move(case_report_dir, self._error_report_path)
-            except:
-                #if error again
-                pass
-            screenshot_at_failure = join(case_report_dir_path, FAILURE_SNAPSHOT_NAME)
-            log = join(case_report_dir_path, 'log.zip')
-            expect = None
-
-        self.result_properties.update({'extras': {'screenshot_at_failure': screenshot_at_failure,
-                                                  'log': log,
-                                                  'expect': expect,
+        self.result_properties.update({'extras': {'screenshot_at_failure': ctx.screenshot_at_failure,
+                                                  'log': ctx.log,
+                                                  'expect': ctx.expect,
                                                  }
                                        })
 
     def addFailure(self, test, err, capt=None, tbinfo=None):
-        module_name = test.id().split('.')[-3]
-        class_name = test.id().split('.')[-2]
-        method_name = test.id().split('.')[-1]
-        case_dir_name = '%s%s%s' % (class_name, '.', method_name)
+        ctx = self.getTestCaseContext(test)
+        ctx.case_end_time = reporttime()
         #payload data
         self.result_properties.update({'payload': {'tid': self.tid,
-                                                  'casename': case_dir_name,
-                                                  'starttime': self.case_start_time,
-                                                  'endtime': reporttime(),
+                                                  'casename': ctx.case_dir_name,
+                                                  'starttime': ctx.case_start_time,
+                                                  'endtime': ctx.case_end_time,
                                                   'result': 'fail',
-                                                  'trace':formatOutput(case_dir_name, 'fail', err)
+                                                  'trace':formatOutput(ctx.case_dir_name, 'fail', err)
                                                   }
                                        })
         if self.opt.reportserver:
@@ -357,18 +400,15 @@ class ReporterPlugin(nose.plugins.Plugin):
 
     #remote upload
     def addError(self, test, err, capt=None):
-        module_name = test.id().split('.')[-3]
-        class_name = test.id().split('.')[-2]
-        method_name = test.id().split('.')[-1]
-        case_dir_name = '%s%s%s' % (class_name, '.', method_name)
-        case_start_time = self.case_start_time
+        ctx = self.getTestCaseContext(test)
+        ctx.case_end_time = reporttime()
 
         self.result_properties.update({'payload': {'tid': self.tid,
-                                                  'casename': case_dir_name,
-                                                  'starttime': self.case_start_time,
-                                                  'endtime': reporttime(),
+                                                  'casename': ctx.case_dir_name,
+                                                  'starttime': ctx.case_start_time,
+                                                  'endtime': ctx.case_end_time,
                                                   'result': 'error',
-                                                  'trace':formatOutput(case_dir_name, 'error', err)
+                                                  'trace':formatOutput(ctx.case_dir_name, 'error', err)
                                                   }
                                        })
 
@@ -377,16 +417,13 @@ class ReporterPlugin(nose.plugins.Plugin):
 
     #remote upload
     def addSuccess(self, test, capt=None):
-        module_name = test.id().split('.')[-3]
-        class_name = test.id().split('.')[-2]
-        method_name = test.id().split('.')[-1]
-        case_dir_name = '%s%s%s' % (class_name, '.', method_name)
-
+        ctx = self.getTestCaseContext(test)
+        ctx.case_end_time = reporttime()
         self.result_properties.clear()
         self.result_properties.update({'payload': {'tid': self.tid,
-                                                   'casename': case_dir_name,
-                                                   'starttime': self.case_start_time,
-                                                   'endtime': reporttime(),
+                                                   'casename': ctx.case_dir_name,
+                                                   'starttime': ctx.case_start_time,
+                                                   'endtime': ctx.case_end_time,
                                                    'result': 'pass'
                                                   }
                                       })        
