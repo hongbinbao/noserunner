@@ -4,42 +4,84 @@
 import os
 import sys
 import time
-import logging
-import shutil
+import uuid
+import json
 import nose
+import shutil
+import zipfile
+import logging
+import datetime
+import traceback
+from ConfigParser import ConfigParser
 from commands import getoutput as shell
 from os.path import join, exists
-import json
-from StringIO import StringIO as p_StringO
-from cStringIO import OutputType as c_StringO
-import traceback
-import datetime
-import uuid
-from ConfigParser import ConfigParser
 from client import ReportClient
-import zipfile
+
 log = logging.getLogger(__name__)
 '''global log instance'''
+
 TAG='%s%s%s' % ('-' * 18, 'file output save Plugin', '-' * 18)
 '''global log output tag'''
+
 TIME_STAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
 '''global time stamp format'''
+
 OUTPUT_FILE_NAME = 'result.txt'
 '''global test result output file name'''
+
 LOG_FILE_NAME = 'log.txt'
 '''global test log output name'''
+
 FAILURE_SNAPSHOT_NAME = 'failure.png'
 '''default string name of result file. can be modify by user-specify'''
-#WORDINGDIR = os.environ['WORKSPACE'],
-'''default output workspace'''
-#SIZE_OF_FILE = 4096
-'''default size of result file'''
+
 REPORT_TIME_STAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
 
+def uniqueID():
+    '''
+    return a unique id of test session.
+    '''
+    return str(uuid.uuid1())
+
+def _time():
+    '''
+    generic time stamp format
+    '''
+    #return time.strftime(TIME_STAMP_FORMAT, time.localtime(time.time()))
+    return str(datetime.datetime.now())
+
+def reporttime():
+    '''
+    return time stamp format with REPORT_TIME_STAMP_FORMAT
+    '''
+    return time.strftime(REPORT_TIME_STAMP_FORMAT, time.localtime(time.time()))
+
+def _mkdir(path):
+    '''
+    create directory as path
+    '''
+    if not exists(path):
+        os.makedirs(path)
+    return path
+
+def writeResultToFile(output, content):
+    '''
+    Used to generated brief result to local result.txt file.
+    '''
+    with open(output, 'a') as f:
+        f.write('%s%s' % (json.dumps(content), os.linesep))
+
+def formatOutput(name, etype, err):
+    '''
+    change the output format of exception
+    '''
+    exception_text = traceback.format_exception(*err)
+    #exception_text = "".join(exception_text).replace(os.linesep, '')
+    return exception_text
 
 class TestCounter(object):
     '''
-    Test Session counter.
+    Test session counter.
     '''
     def __init__(self, sid=None, tid=0):
         self.__sid = sid if sid else uniqueID()
@@ -47,7 +89,10 @@ class TestCounter(object):
 
     @property
     def sid(self):
-       return self.__sid
+        '''
+        return session id
+        '''
+        return self.__sid
 
     def next(self):
         '''
@@ -63,9 +108,17 @@ class TestCounter(object):
         return self.__tid
 
     def reset(self):
+        '''
+        reset test case id
+        '''
         self.__tid = 0
 
 class TestCaseContext(object):
+    '''
+    Test case context. test case extends from unittest.TestCase can refer it by self.contexts.
+    The instance of it is injected to the context of test case instance by plugin when prepareTestCase.
+    
+    '''
     def __init__(self, output_failures, output_errors):
         self.__output_failures = output_failures
         self.__output_errors = output_errors
@@ -144,30 +197,6 @@ class TestCaseContext(object):
     def expect(self):
         return self.__expect
 
-def uniqueID():
-    return str(uuid.uuid1())
-
-def _time():
-    '''
-    time stamp format
-    '''
-    #return time.strftime(TIME_STAMP_FORMAT, time.localtime(time.time()))
-    return str(datetime.datetime.now())
-
-def reporttime():
-    '''
-    return time stamp format with REPORT_TIME_STAMP_FORMAT
-    '''
-    return time.strftime(REPORT_TIME_STAMP_FORMAT, time.localtime(time.time()))
-
-def _mkdir(path):
-    '''
-    create directory as path
-    '''
-    if not exists(path):
-        os.makedirs(path)
-    return path
-
 def zipLog(src, dest):
     import zipfile
     try:
@@ -202,17 +231,6 @@ def save(path):
         shell('adb logcat -v time -d > %s ' % join(path, LOG_FILE_NAME))
     #zipLog(os.path.join(path, LOG_FILE_NAME), path)
 
-def writeResultToFile(output, content):
-    '''
-    Used to generated brief result to local result.txt file.
-    '''
-    with open(output, 'a') as f:
-        f.write('%s%s' % (json.dumps(content), os.linesep))
-
-def formatOutput(name, etype, err):
-    exception_text = traceback.format_exception(*err)
-    #exception_text = "".join(exception_text).replace(os.linesep, '')
-    return exception_text
 
 class ReporterPlugin(nose.plugins.Plugin):
     """
