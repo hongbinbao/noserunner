@@ -1,4 +1,4 @@
-noserunner
+noserunner 0.0.1
 ==========
 
 runner based on python nose testing framework
