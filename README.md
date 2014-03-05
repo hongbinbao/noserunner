@@ -23,7 +23,17 @@ runner based on python nose testing framework
 
 	  --reportserver        Enable the report server feature. Default is disable
 
+### TestCaseContext instance provided by nose plugin
 
+    test case extends from unittest.TestCase is able to get TestCaseContext obj during nose run time.
+     
+    """
+    def testMethod(self):
+        ctx = self.contexts 
+        user_log_dir_path = ctx.user_log_dir
+        
+    """
+    
 ### Demo
 
     ├── client.py                                       #nose plugin module
