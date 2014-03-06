@@ -1,4 +1,5 @@
 [tests]
 scripts.testcases.phone.Phone.testCall = 2
 scripts.testcases.browser.Browser.testOpenBrowser = 2
+scripts.testcases.inst.Caculator.testCaculator = 1
 
