@@ -4,10 +4,10 @@
 import os
 import sys
 import logging
+import unittest
 import ConfigParser
 from collections import  OrderedDict
 import nose
-import unittest
 from nose.suite import *
 log = logging.getLogger(__name__)
 
@@ -33,8 +33,8 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
                           dest='plan_file', default='plan',
                           help="Run the tests that list in plan file")
 
-        parser.add_option('--loop', action='store', type='string',metavar="STRING",
-                          dest='loops', default='1',
+        parser.add_option('--cycle', action='store', type='string',metavar="STRING",
+                          dest='cycles', default='1',
                           help="Run the tests with specified loop number. default will execute forever ")
 
 
@@ -50,9 +50,9 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
         self.conf = conf
         if options.plan_file:
             self.enabled = True
-        if options.loops:
+        if options.cycles:
             self.enabled = True
-            self.loops = options.loops
+            self.cycles = options.cycles
         self.plan_file = os.path.expanduser(options.plan_file)
         if not os.path.isabs(self.plan_file):
             self.plan_file = os.path.join(conf.workingDir, self.plan_file)
@@ -66,14 +66,17 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
         self.loader = loader
         self.suiteClass = loader.suiteClass
 
-    def getTestsFromPlanFile(self, plan_file_path, section_name, loop):
+    def getTestsFromPlanFile(self, plan_file_path, section_name, cycle):
+        '''
+        load test sequence list from plan file 
+        '''
         tests = []
         parser = ConfigParser.ConfigParser(dict_type=OrderedDict)
         parser.optionxform = lambda x: x
         parser.read(plan_file_path)
         tests = parser.items(section_name)
         n = 1
-        while n <= int(loop): 
+        while n <= int(cycle): 
             for (k,v) in tests:
                 for i in range(int(v)):
                     yield k
@@ -84,7 +87,7 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
         replace the way of loading test case using plan file.
         """
         loader = self.loader
-        names = self.getTestsFromPlanFile(plan_file_path=self.plan_file, section_name='tests', loop=self.loops)
+        names = self.getTestsFromPlanFile(plan_file_path=self.plan_file, section_name='tests', cycle=self.cycles)
         return (None, names)
 
 
