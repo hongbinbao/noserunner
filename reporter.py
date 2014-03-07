@@ -14,7 +14,7 @@ import datetime
 import traceback
 from ConfigParser import ConfigParser
 from commands import getoutput as shell
-from os.path import join, exists
+from os.path import join, exists, dirname
 from client import ReportClient
 
 log = logging.getLogger(__name__)
@@ -185,7 +185,7 @@ class TestCaseContext(object):
 
     @property
     def screenshot_at_failure(self):
-        self.__screenshot_at_failure = join(self.case_report_dir_path, FAILURE_SNAPSHOT_NAME)
+        self.__screenshot_at_failure = join(join(self.case_report_dir_path, 'logs'), FAILURE_SNAPSHOT_NAME)
         return self.__screenshot_at_failure
 
     @property
@@ -197,24 +197,33 @@ class TestCaseContext(object):
     def expect(self):
         return self.__expect
 
-def zipLog(src, dest):
-    import zipfile
-    try:
-        import zlib
-        compression = zipfile.ZIP_DEFLATED
+def zipFolder(folder_name, file_name, includeEmptyDIr=False):
+    '''
+    create a zip file for folder
+    '''
+    empty_dirs = []
+    try:  
+        ziper = zipfile.ZipFile(file_name, 'w', zipfile.ZIP_DEFLATED)  
+        for root, dirs, files in os.walk(folder_name):
+            empty_dirs.extend([d for d in dirs if os.listdir(os.path.join(root, d)) == []])  
+            for name in files:
+                ziper.write(os.path.join(root ,name), name)
+                #fix same name error
+                #full zip with parent dir
+                #ziper.write(os.path.join(root ,name), os.path.join(os.path.splitext(filename)[0],name))
+            if includeEmptyDIr:  
+                for d in empty_dirs:  
+                    zif = zipfile.ZipInfo(os.path.join(root, d) + "/")  
+                    ziper.writestr(zif, "")
+            empty_dirs = []
+        return True
     except:
-        compression = zipfile.ZIP_STORED
-                                                
-    modes = {zipfile.ZIP_DEFLATED: 'deflated', zipfile.ZIP_STORED:'stored'}                                                
-
-    zf = zipfile.ZipFile(os.path.join(dest, 'log.zip'), mode='w')
-    try:
-        zf.write(src, compress_type=compression)
+        return False
     finally:
-        print 'closing'
-        zf.close()
+        if ziper != None:
+            ziper.close()
 
-def save(path):
+def grabLog(path):
     '''
     pull log/snapshot from device to local report folder
     '''
@@ -229,7 +238,8 @@ def save(path):
         shell('adb shell screencap /sdcard/%s' % FAILURE_SNAPSHOT_NAME)
         shell('adb pull /sdcard/%s %s' % (FAILURE_SNAPSHOT_NAME, path))
         shell('adb logcat -v time -d > %s ' % join(path, LOG_FILE_NAME))
-    #zipLog(os.path.join(path, LOG_FILE_NAME), path)
+    zipFolder(join(dirname(path), 'logs'), join(dirname(path), 'log.zip'))
+
 
 
 class ReporterPlugin(nose.plugins.Plugin):
@@ -375,7 +385,7 @@ class ReporterPlugin(nose.plugins.Plugin):
 
         ctx = self.getTestCaseContext(test)
         #common log output
-        save(ctx.user_log_dir)
+        grabLog(ctx.user_log_dir)
         shutil.move(ctx.case_report_tmp_dir, self._fail_report_path)
 
         self.result_properties.update({'extras': {'screenshot_at_failure': ctx.screenshot_at_failure,
@@ -392,7 +402,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         
         ctx = self.getTestCaseContext(test)
         #last step snapshot
-        save(ctx.user_log_dir)
+        grabLog(ctx.user_log_dir)
         shutil.move(ctx.case_report_tmp_dir, self._error_report_path)
 
         self.result_properties.update({'extras': {'screenshot_at_failure': ctx.screenshot_at_failure,
