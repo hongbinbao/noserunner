@@ -94,6 +94,15 @@ def getContentType(filename):
     if ext == 'zip': return 'application/zip'
     return None
 
+def fbuffer(f, chunk_size=1024):
+    '''
+    read source file. default chunk size is 1024b.
+    '''
+    while True:
+        chunk = f.read(chunk_size)
+        if not chunk: break
+        yield chunk
+
 class MemoryZip(object):
  
     def __init__(self):
