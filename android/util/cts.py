@@ -14,7 +14,7 @@ from commands import getoutput as call
 
 def instrument(test):
     local_cmd = 'adb shell am instrument -w -r -e class %s#%s %s'
-    #get the JAVA test package name and method name by module path and name
+    #get the JAVA test class and method name by module path and name
     params = {'class': '%s.%s' % (test.__module__, type(test).__name__),
               'method': test._testMethodName,
               'componment':  test.inst_componment
