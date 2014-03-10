@@ -33,6 +33,14 @@ runner based on python nose testing framework
         user_log_dir_path = ctx.user_log_dir
         
     """
+    function test case is able to get TestCaseContext obj during nose run time.
+     
+    """
+    def testMethod():
+        ctx = contexts 
+        user_log_dir_path = ctx.user_log_dir
+        
+    """
     
 ### Demo
 
