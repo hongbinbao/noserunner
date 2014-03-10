@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*- 
 import unittest
-import re
+import re, sys
 from commands import getoutput as call
 
 #standard way to launch instrumentation test case from command line
@@ -23,7 +23,13 @@ inst_params2 = {'class': 'android.util.cts.XmlTest',
 
 local_cmd = 'adb shell am instrument -w -r -e class %s#%s %s'
 
-def instrument(params):
+def instrument(test):
+
+    params = {'class': '%s.%s' % (test.__module__, type(test).__name__),
+              'method': test._testMethodName,
+              'componment':  test.inst_componment
+              }
+
     cmd = local_cmd % (params['class'], params['method'], params['componment'])
     ret = call(cmd)
     vmap = {}
@@ -39,29 +45,22 @@ def instrument(params):
     vmap[key] = value
     return vmap
 
-class Caculator(unittest.TestCase):
+class XmlTest(unittest.TestCase):
+
     def setUp(self):
-        super(Caculator, self).setUp()
+        super(XmlTest, self).setUp()
+        self.inst_componment = 'com.android.cts.util/android.test.InstrumentationCtsTestRunner'
 
     def tearDown(self):
-        super(Caculator, self).tearDown()
+        super(XmlTest, self).tearDown()
 
     def testAsAttributeSet(self):
-        output = instrument(inst_params1)
+        #yield instrument, inst_params
+        output = instrument(self)
         assert output['stream'].find('OK') != -1, ret
 
     def testFindEncodingByName(self):
         #yield instrument, inst_params
-        output = instrument(inst_params2)
+        output = instrument(self)
         assert output['stream'].find('OK') != -1, ret
 
-#instrument [options] <COMPONENT> Start monitoring with an Instrumentation instance.
-#Typically the target <COMPONENT> is the form <TEST_PACKAGE>/<RUNNER_CLASS>.
-#Options are:
-
-#-r: Print raw results (otherwise decode <REPORT_KEY_STREAMRESULT>). Use with [-e perf true] to generate raw output for performance measurements.
-#-e <NAME> <VALUE>: Set argument <NAME> to <VALUE>. For test runners a common form is -e <testrunner_flag> <value>[,<value>...].
-#-p <FILE>: Write profiling data to <FILE>.
-#-w: Wait for instrumentation to finish before returning. Required for test runners.
-#--no-window-animation: Turn off window animations while running.
-#--user <USER_ID> | current: Specify which user instrumentation runs in; current user if not specified.
