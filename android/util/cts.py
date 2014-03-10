@@ -11,20 +11,10 @@ from commands import getoutput as call
 #am instrument -w -r -e class android.util.cts.XmlTest com.android.cts.util/android.test.InstrumentationCtsTestRunner
 #am instrument -w com.android.cts.util/android.test.InstrumentationCtsTestRunner
 
-inst_params1 = {'class': 'android.util.cts.XmlTest',
-               'method': 'testAsAttributeSet',
-               'componment': 'com.android.cts.util/android.test.InstrumentationCtsTestRunner'
-               }
-
-inst_params2 = {'class': 'android.util.cts.XmlTest',
-               'method': 'testFindEncodingByName',
-               'componment': 'com.android.cts.util/android.test.InstrumentationCtsTestRunner'
-               }
-
-local_cmd = 'adb shell am instrument -w -r -e class %s#%s %s'
 
 def instrument(test):
-
+    local_cmd = 'adb shell am instrument -w -r -e class %s#%s %s'
+    
     params = {'class': '%s.%s' % (test.__module__, type(test).__name__),
               'method': test._testMethodName,
               'componment':  test.inst_componment
