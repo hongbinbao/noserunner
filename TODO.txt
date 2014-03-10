@@ -1,0 +1,10 @@
+format of log.zip:
+content.txt:  data = {'device_log'     : 'log.txt',  
+                      'case_log'       : 'case_log.txt',
+                      'laststep_image' : 'failure.png',
+                      'anr_trace'      : 'trace.txt'}
+
+log.txt : data
+case_log.txt: data
+failure.png : data
+trace.txt : data
