@@ -6,7 +6,7 @@ from ConfigParser import ConfigParser
 import json, hashlib, math, time, threading, sys, os
 from os.path import dirname, abspath, join, exists, splitext, split
 from threading import Thread
-
+REPORT_TIME_STAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
 AUTH_REQ_TIMEOUT = 3
 REQ_TIMEOUT = 3
 
@@ -60,6 +60,12 @@ REQ_TIMEOUT = 3
 #request header   : Content-Type: 'image/png' | Content-Type: 'application/zip', 'Accept': 'application/json'
 #request payload  : {'file': file_data }
 #response payload : {'result': ok|error, msg': log_error}
+
+def reporttime():
+    '''
+    return time stamp format with REPORT_TIME_STAMP_FORMAT
+    '''
+    return time.strftime(REPORT_TIME_STAMP_FORMAT, time.localtime(time.time()))
 
 def getServerConfiguration(config):
     ret = {}
@@ -247,13 +253,17 @@ def request(method, url, data=None, **kwargs):
         if r:
             ret = r.json()
     except requests.exceptions.Timeout, e:
-        sys.stderr.write(str(e))
+        #sys.stderr.write(str(e))
+        pass
     except requests.exceptions.TooManyRedirects , e:
-        sys.stderr.write(str(e))
+        #sys.stderr.write(str(e))
+        pass
     except requests.exceptions.RequestException , e:
-        sys.stderr.write(str(e))
+        #sys.stderr.write(str(e))
+        pass
     except Exception, e:
-        sys.stderr.write(str(e))
+        #sys.stderr.write(str(e))
+        pass
     return ret
 
 REQ_TIMEOUT = 3
@@ -325,13 +335,14 @@ class ReportClient(object):
         #                                }\
         #                  }\
         #          }
-        deviceinfo = {'product':self.__dict__['product'], 'revision':self.__dict__['revision'], 'width':self.__dict__['screen_width'], 'height':self.__dict__['screen_height']}
+        deviceinfo = {'product':self.__dict__['product'], 'deviceid':self.__dict__['deviceid'], 'revision':self.__dict__['revision'], 'width':self.__dict__['screen_width'], 'height':self.__dict__['screen_height']}
         values = json.dumps({'subc': 'create',
                              'token':self.token ,
-                             'data':{'planname':self.__dict__['planname'], 'starttime':kwargs.pop('starttime'), 'deviceid':self.__dict__['deviceid'],'deviceinfo':deviceinfo}})
+                             'data':{'planname':self.__dict__['planname'], 'starttime':kwargs.pop('starttime'), 'deviceinfo':deviceinfo}})
         ret = request(method='post', url=url, data=values, headers=headers, timeout=REQ_TIMEOUT)
         #{u'msg': u'', u'data': {}, u'result': u'ok'}
         try:
+
             if ret['result'] == 'ok':
                 self.created = True
         except:
@@ -343,6 +354,43 @@ class ReportClient(object):
         file_url = self.__dict__['file_upload'] % (self.session_id, kwargs['payload']['tid'])
         kwargs.update({'token':self.token, 'result_url': result_url, 'file_url': file_url})
         UploadThread(**kwargs).start()
+
+    def updateSession(self, **kwargs):
+        '''
+        session_properties = {    'sid': self.session_id,\
+                                  'product': 'p',\
+                                  'revision': 'r',\
+                                  'deviceid': 'devid',\
+                                  'planname': 'test.plan',\
+                                  'starttime': self.conf.test_start_time
+                                 }
+        '''
+        self.session_id =  kwargs.pop('sid')
+        url = self.__dict__['session_update'] % self.session_id
+        headers = {'content-type': 'application/json', 'accept': 'application/json'}
+        #new style API
+        #values = { 'token': self.token,\
+        #           'subc':'create',\
+        #           'data':{'planname':kwargs.pop('planname'),\
+        #                   'starttime':kwargs.pop('starttime'),\
+        #                   'deviceinfo':{'product':kwargs.pop('product'),\
+        #                   'revision':kwargs.pop('revision'),\
+        #                   'deviceid':kwargs.pop('deviceid')\
+        #                                }\
+        #                  }\
+        #          }
+        
+        values = json.dumps({'subc': 'update',
+                             'token':self.token ,
+                             'data':{'endtime': reporttime()}})
+        ret = request(method='post', url=url, data=values, headers=headers, timeout=REQ_TIMEOUT)
+        #{u'msg': u'', u'data': {}, u'result': u'ok'}
+        try:
+
+            if ret['result'] == 'ok':
+                pass
+        except:
+            pass
 
 
 class UploadThread(threading.Thread):

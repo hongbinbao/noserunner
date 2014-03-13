@@ -7,6 +7,8 @@ import time
 import uuid
 import json
 import nose
+import datetime
+import string
 import shutil
 import zipfile
 import logging
@@ -180,7 +182,6 @@ class TestCaseContext(object):
     @property
     def case_report_tmp_dir(self):
         self.__case_report_tmp_dir = join(join(os.getcwd(), 'tmp'), self.case_report_dir_name)
-        #sys.stderr.write(self.__case_report_tmp_dir)
         return self.__case_report_tmp_dir
 
     @property
@@ -241,6 +242,15 @@ def grabLog(path):
     zipFolder(join(dirname(path), 'logs'), join(dirname(path), 'log.zip'))
 
 
+class Timer(object):
+    def __init__(self, duration):
+        self.__starttime = datetime.datetime.now()
+        self.__duration = duration
+
+    def alive(self):
+        isAlive = (datetime.datetime.now() - self.__starttime) < self.__duration
+        return  isAlive
+
 
 class ReporterPlugin(nose.plugins.Plugin):
     """
@@ -249,10 +259,11 @@ class ReporterPlugin(nose.plugins.Plugin):
     name = 'reporter'
     #score = 200
 
-    def __init__(self, counter=None, report_client=None):
+    def __init__(self, counter=None, report_client=None, timer=None):
         super(ReporterPlugin, self).__init__()
         self.__counter = counter if counter else TestCounter()
         self.__report_client = report_client if report_client else None
+        self.__timer = timer
 
     def options(self, parser, env):
         """ 
@@ -283,6 +294,36 @@ class ReporterPlugin(nose.plugins.Plugin):
                           dest='server_config', default='server.config',
                           help="specify the server config file path")
 
+        parser.add_option('--duration', dest='duration', type='string',metavar="STRING",
+                          action='callback', callback=self._validate_duration, 
+                          help='The minumum test duration before ending the test.\
+                                  Here format must follow next format: xxDxxHxxMxxS.\
+                                  e.g. --duration=2D09H30M12S, which means 2 days, 09 hours, 30 minutes and 12 seconds')
+
+    def _validate_duration(self, option, opt, value, parser):
+        '''
+        '''
+        value = string.lower(value)
+        begin = 0
+        days = hours = minutes = seconds = 0
+        for i, v in enumerate(value):
+            if v == 'd':
+                days = int(value[begin:i])
+                begin = i + 1
+            elif v == 'h':
+                hours = int(value[begin:i])
+                begin = i + 1
+            elif v == 'm':
+                minutes = int(value[begin:i])
+                begin = i + 1
+            elif v == 's':
+                seconds = int(value[begin:i])
+                begin = i + 1
+        if begin == 0:
+            parser.error('%s: duration format error' % value) 
+        times = datetime.timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)      
+        setattr(parser.values, option.dest, times)
+
     def getDefault(self):
         workspace = os.getcwd()
         if 'WORKSPACE' in os.environ:
@@ -296,10 +337,13 @@ class ReporterPlugin(nose.plugins.Plugin):
         """
         super(ReporterPlugin, self).configure(options, conf)
         if not self.enabled: return
+
         self.write_hashes = conf.verbosity == 2
         self.conf = conf
         self.opt = options
         self.result_properties = {'payload': None, 'extras': None}
+        if self.opt.duration and not self.__timer:
+            self.__timer = Timer(self.opt.duration)
         #if disable report server
         if self.opt.reportserver and not self.__report_client:
             server_need = {'username':None, 'password':None, 'auth':None, 'session_create':None,
@@ -356,7 +400,6 @@ class ReporterPlugin(nose.plugins.Plugin):
         return getattr(test.context, 'contexts')
 
     def prepareTestCase(self, test):
-        #sys.stderr.write('------------------------------prepareTestCase-------------\n')
         self.setTestCaseContext(test)
 
     def startTest(self, test):
@@ -370,11 +413,6 @@ class ReporterPlugin(nose.plugins.Plugin):
         if self.write_hashes:
             self._write('#%s %s ' % (str(self.tid), str(ctx.case_start_time)))
 
-    def stopTest(self, test):
-        """
-        stopTest: called before afterTest(*)
-        """
-        pass
 
     def handleFailure(self, test, err):
         '''
@@ -423,6 +461,8 @@ class ReporterPlugin(nose.plugins.Plugin):
                                                   'trace':formatOutput(ctx.case_dir_name, 'fail', err)
                                                   }
                                        })
+        if self.__timer and not self.__timer.alive():
+            self.conf.stopOnError = True
         if self.opt.reportserver:
             self.__report_client.updateTestCase(**self.result_properties)
 
@@ -439,6 +479,8 @@ class ReporterPlugin(nose.plugins.Plugin):
                                                   'trace':formatOutput(ctx.case_dir_name, 'error', err)
                                                   }
                                        })
+        if self.__timer and not self.__timer.alive():
+            self.conf.stopOnError = True
 
         if self.opt.reportserver:
             self.__report_client.updateTestCase(**self.result_properties)
@@ -454,6 +496,19 @@ class ReporterPlugin(nose.plugins.Plugin):
                                                    'endtime': ctx.case_end_time,
                                                    'result': 'pass'
                                                   }
-                                      })        
+                                      })
+        if self.__timer and not self.__timer.alive():
+            self.conf.stopOnError = True
         if self.opt.reportserver:
             self.__report_client.updateTestCase(**self.result_properties)
+
+    def report(self, stream):
+        session_properties = {'sid': self.session_id}
+        if self.opt.reportserver:
+            self.__report_client.updateSession(**session_properties)                              
+        return None
+
+    def finalize(self, result):
+        if self.conf.stopOnError:
+            sys.exit(1)
+        return None

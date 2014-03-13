@@ -1,4 +1,4 @@
-noserunner 0.0.1
+noserunner 0.0.2
 ==========
 
 runner based on python nose testing framework
@@ -13,15 +13,25 @@ runner based on python nose testing framework
     $ python runtests.py -h
   
 ### Command-line
-    python runtests.py [-h|--help] [--cycle CYCLE] [--reportserver]
+    usage:
+	python runtests.py [-h|--help] [--cycle CYCLE] [--reportserver]
+
 
     Process the paramters of runtests
     optional arguments:
-	  -h, --help            Show this help message and exit
+	    -h, --help            Show this help message and exit
 
-	  --cycle CYCLE         Set the number(int) of cycle. Execute test with a specified number of cycle. Default is 1
+	    --cycle CYCLE         Set the number(int) of cycle. Execute test with a specified number of cycle. Default is 1
 
-	  --reportserver        Enable the report server feature. Default is disable
+	    --duration DURATION   The minumum test duration before ending the test.
+
+					Here format must follow next format: xxDxxHxxMxxS.
+
+					e.g. --duration=2D09H30M12S, which means 2 days, 09 hours, 30 minutes and 12 seconds
+
+	    --reportserver        Enable the report server feature. Default is disable
+
+	    --verbosity           Default is 2. set the level(1~5) of verbosity to get the help string of every test and the result
 
 ### TestCaseContext instance provided by nose plugin
 

@@ -18,22 +18,47 @@ def showUsage():
     print 'optional arguments:'
     print '\t-h, --help            Show this help message and exit\n'
     print '\t--cycle CYCLE         Set the number(int) of cycle. Execute test with a specified number of cycle. Default is 1\n'
+    print '\t--duration DURATION   The minumum test duration before ending the test.\n'
+    print                          '\t\t\t\t\tHere format must follow next format: xxDxxHxxMxxS.\n'
+    print                          '\t\t\t\t\te.g. --duration=2D09H30M12S, which means 2 days, 09 hours, 30 minutes and 12 seconds\n'
     print '\t--reportserver        Enable the report server feature. Default is disable\n'
+    print '\t--verbosity           Default is 2. set the level(1~5) of verbosity to get the help string of every test and the result\n'
     exit(1)
 
 if __name__ == '__main__':
     if '-h' in sys.argv or '--help' in sys.argv: showUsage()
-    cycle = 1
-    argvs = ['','--with-plan-loader', '--verbosity=2', '--with-reporter', '--cycle=1']
+    cycle = None
+    argvs = ['','--with-plan-loader', '--with-reporter',  '--cycle','1']
+    if '--duration' not in sys.argv and '--cycle' not in sys.argv:
+        print '\nmiss --duration or --cycle!\n'
+        showUsage()
     if len(sys.argv) >= 2:
+        if '--verbosity' not in sys.argv:
+            argvs.append('--verbosity')
+            argvs.append('2')
+        else:
+            index = sys.argv.index('--verbosity')
+            verbosity = sys.argv[int(index)+1]
+            argvs.append('--verbosity')
+            argvs.append(verbosity)
+
         if '--cycle' in sys.argv:
             index = sys.argv.index('--cycle')
             cycle = int(sys.argv[int(index)+1])
+
         if '--reportserver' in sys.argv:
             argvs.append('--reportserver')
+
+        if '--duration' in sys.argv:
+            index = sys.argv.index('--duration')
+            duration = sys.argv[int(index)+1]
+            argvs.append('--duration')
+            argvs.append(duration)
     planloader = PlanLoaderPlugin()
     reporter = ReporterPlugin()
-    for i in range(cycle):
-        nose.run(argv=argvs, addplugins=[planloader, reporter])
-        #nose.main(addplugins=[PlanLoaderPlugin(), DeviceConfigPlugin(), FileOutputPlugin()])
-        #nose.run(argv=['','--with-plan-loader', '--verbosity=5','--with-device-config','--with-file-output'])
+    if not cycle:
+        while True:
+            nose.run(argv=argvs, addplugins=[planloader, reporter])
+    else:
+        for i in range(cycle):
+            nose.run(argv=argvs, addplugins=[planloader, reporter])
