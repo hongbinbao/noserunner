@@ -18,7 +18,7 @@ def showUsage():
     print 'optional arguments:'
     print '\t-h, --help            Show this help message and exit\n'
     print '\t--cycle CYCLE         Set the number(int) of cycle. Execute test with a specified number of cycle. Default is 1\n'
-    print '\t--plan CYCLE          Set the absolute path or relative path of test plan file.Default is current directory\n'
+    print '\t--plan PLAN           Set the absolute path or relative path of test plan file.Default is current directory\n'
     print '\t--duration DURATION   The minumum test duration before ending the test\n'
     print                          '\t\t\t\t\tHere format must follow next format: xxDxxHxxMxxS\n'
     print                          '\t\t\t\t\te.g. --duration=2D09H30M12S, which means 2 days, 09 hours, 30 minutes and 12 seconds\n'
