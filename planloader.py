@@ -56,6 +56,7 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
         self.plan_file = os.path.expanduser(options.plan_file)
         if not os.path.isabs(self.plan_file):
             self.plan_file = os.path.join(conf.workingDir, self.plan_file)
+        self.conf.workingDir = os.path.dirname(self.plan_file)
         if not os.path.exists(self.plan_file):
             raise Exception('file not found: %s' % self.plan_file)
 

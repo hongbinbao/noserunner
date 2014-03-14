@@ -378,6 +378,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         self.test_start_time = getattr(self, 'test_start_time', None)
         if not self.test_start_time:
             self.test_start_time = reporttime()
+        self.opt.directory = self.conf.workingDir
         self._report_path = _mkdir(join(join(self.opt.directory, 'report'), str(self.test_start_time).replace(' ', '_')))
         self._all_report_path = _mkdir(join(self._report_path, 'all'))
         self._fail_report_path = _mkdir(join(self._report_path, 'fail'))

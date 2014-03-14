@@ -25,9 +25,9 @@ runner based on python nose testing framework
 
 	    --duration DURATION   The minumum test duration before ending the test.
 
-					          Here format must follow next format: xxDxxHxxMxxS.
+					Here format must follow next format: xxDxxHxxMxxS.
 
-					          e.g. --duration=2D09H30M12S, which means 2 days, 09 hours, 30 minutes and 12 seconds
+					e.g. --duration=2D09H30M12S, which means 2 days, 09 hours, 30 minutes and 12 seconds
 
 	    --reportserver        Enable the report server feature. Default is disable
 

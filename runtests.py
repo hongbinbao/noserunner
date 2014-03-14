@@ -18,11 +18,12 @@ def showUsage():
     print 'optional arguments:'
     print '\t-h, --help            Show this help message and exit\n'
     print '\t--cycle CYCLE         Set the number(int) of cycle. Execute test with a specified number of cycle. Default is 1\n'
-    print '\t--duration DURATION   The minumum test duration before ending the test.\n'
-    print                          '\t\t\t\t\tHere format must follow next format: xxDxxHxxMxxS.\n'
+    print '\t--plan CYCLE          Set the absolute path or relative path of test plan file.Default is current directory\n'
+    print '\t--duration DURATION   The minumum test duration before ending the test\n'
+    print                          '\t\t\t\t\tHere format must follow next format: xxDxxHxxMxxS\n'
     print                          '\t\t\t\t\te.g. --duration=2D09H30M12S, which means 2 days, 09 hours, 30 minutes and 12 seconds\n'
     print '\t--reportserver        Enable the report server feature. Default is disable\n'
-    print '\t--verbosity           Default is 2. set the level(1~5) of verbosity to get the help string of every test and the result\n'
+    print '\t--verbosity           Set the level(1~5) of verbosity to get the help string of every test and the result. Default is 2\n'
     exit(1)
 
 if __name__ == '__main__':
@@ -46,6 +47,12 @@ if __name__ == '__main__':
             index = sys.argv.index('--cycle')
             cycle = int(sys.argv[int(index)+1])
 
+        if '--plan' in sys.argv:
+            index = sys.argv.index('--plan')
+            plan = sys.argv[int(index)+1]
+            argvs.append('--plan')         
+            argvs.append(plan)
+
         if '--reportserver' in sys.argv:
             argvs.append('--reportserver')
 
@@ -54,6 +61,7 @@ if __name__ == '__main__':
             duration = sys.argv[int(index)+1]
             argvs.append('--duration')
             argvs.append(duration)
+
     planloader = PlanLoaderPlugin()
     reporter = ReporterPlugin()
     if not cycle:
