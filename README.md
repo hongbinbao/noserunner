@@ -34,7 +34,14 @@ runner based on python nose testing framework
 	    --reportserver        Enable the report server feature. Default is disable
 
 	    --verbosity           Default is 2. set the level(1~5) of verbosity to get the help string of every test and the result
-
+	    
+    e.g:
+        python runtests.py --cycle 10                             #run test with 10 cycles
+        python runtests.py --duration 2d                          #run test with 2 days      
+        python runtests.py --cycle 2 --duration 4h                #run test with 10 cycles and expect to finish within 4 hours
+        python runtests.py --cycle 10 --plan path_of_my_plan_file #specify the location of test plan file
+        python runtests.py --cycle 10 --reportserver              #enable to upload result to report server
+  
 ### TestCaseContext instance provided by nose plugin
 
     test case extends from unittest.TestCase is able to get TestCaseContext obj during nose run time.
