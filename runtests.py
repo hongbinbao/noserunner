@@ -66,7 +66,6 @@ if __name__ == '__main__':
 
     planloader = PlanLoaderPlugin()
     reporter = ReporterPlugin()
-    print argvs
     if not cycle:
         while True:
             nose.run(argv=argvs, addplugins=[planloader, reporter])

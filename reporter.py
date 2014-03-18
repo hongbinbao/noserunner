@@ -114,7 +114,8 @@ class TestCounter(object):
 
     def progress(self):
         if self.__total_cycle:
-            return '%.0f%%' % (100.0 * self.__cid/int(self.__total_cycle))
+            #return '%.0f%%' % (100.0 * self.__cid/int(self.__total_cycle))
+            return '%0.2f' % (float(self.__cid)/float(self.__total_cycle))
         else:
             return 'unkown'
 
@@ -267,7 +268,8 @@ class Timer(object):
         return  isAlive
 
     def progress(self):
-        return "{:.2%}".format((datetime.datetime.now() - self.__starttime).total_seconds()/self.__duration.total_seconds())
+        #return "{:.2%}".format((datetime.datetime.now() - self.__starttime).total_seconds()/self.__duration.total_seconds())
+        return '%0.2f' % (float((datetime.datetime.now() - self.__starttime).total_seconds())/(self.__duration.total_seconds()))
 
 class ReporterPlugin(nose.plugins.Plugin):
     """
@@ -532,7 +534,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         if self.opt.duration and self.__timer:
             session_properties.update({'progress': self.__timer.progress()})
         elif self.opt.cycle and self.__counter:
-            session_properties.update({'progress': self.__counter.progress()})      
+            session_properties.update({'progress': self.__counter.progress()}) 
         if self.opt.reportserver:
             self.__report_client.updateSession(**session_properties)                              
         return None
