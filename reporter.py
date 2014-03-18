@@ -269,7 +269,11 @@ class Timer(object):
 
     def progress(self):
         #return "{:.2%}".format((datetime.datetime.now() - self.__starttime).total_seconds()/self.__duration.total_seconds())
-        return '%0.2f' % (float((datetime.datetime.now() - self.__starttime).total_seconds())/(self.__duration.total_seconds()))
+        p = '%0.2f' % (float((datetime.datetime.now() - self.__starttime).total_seconds())/(self.__duration.total_seconds()))
+        if float(p) <= float(0):
+            return '0.01'
+        else: return p
+        #return '%0.02f' % (float((datetime.datetime.now() - self.__starttime).total_seconds())/(self.__duration.total_seconds()))
 
 class ReporterPlugin(nose.plugins.Plugin):
     """
@@ -534,7 +538,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         if self.opt.duration and self.__timer:
             session_properties.update({'progress': self.__timer.progress()})
         elif self.opt.cycle and self.__counter:
-            session_properties.update({'progress': self.__counter.progress()}) 
+            session_properties.update({'progress': self.__counter.progress()})
         if self.opt.reportserver:
             self.__report_client.updateSession(**session_properties)                              
         return None
