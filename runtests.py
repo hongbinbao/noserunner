@@ -29,7 +29,7 @@ def showUsage():
 if __name__ == '__main__':
     if '-h' in sys.argv or '--help' in sys.argv: showUsage()
     cycle = None
-    argvs = ['','--with-plan-loader', '--with-reporter',  '--cycle','1']
+    argvs = ['','--with-plan-loader', '--with-reporter']
     if '--duration' not in sys.argv and '--cycle' not in sys.argv:
         print '\nmiss --duration or --cycle!\n'
         showUsage()
@@ -46,6 +46,8 @@ if __name__ == '__main__':
         if '--cycle' in sys.argv:
             index = sys.argv.index('--cycle')
             cycle = int(sys.argv[int(index)+1])
+            argvs.append('--cycle')
+            argvs.append(str(cycle))            
 
         if '--plan' in sys.argv:
             index = sys.argv.index('--plan')
@@ -64,6 +66,7 @@ if __name__ == '__main__':
 
     planloader = PlanLoaderPlugin()
     reporter = ReporterPlugin()
+    print argvs
     if not cycle:
         while True:
             nose.run(argv=argvs, addplugins=[planloader, reporter])

@@ -85,9 +85,11 @@ class TestCounter(object):
     '''
     Test session counter.
     '''
-    def __init__(self, sid=None, tid=0):
+    def __init__(self, sid=None, tid=0, cid=0, cycles=None):
         self.__sid = sid if sid else uniqueID()
         self.__tid = tid
+        self.__cid = cid
+        self.__total_cycle = cycles
 
     @property
     def sid(self):
@@ -96,12 +98,25 @@ class TestCounter(object):
         '''
         return self.__sid
 
-    def next(self):
+    def next_tid(self):
         '''
         generated test case id
         '''
         self.__tid += 1
         return self.__tid
+
+    def next_cid(self):
+        '''
+        generated test case id
+        '''
+        self.__cid += 1
+        return self.__cid
+
+    def progress(self):
+        if self.__total_cycle:
+            return '%.0f%%' % (100.0 * self.__cid/int(self.__total_cycle))
+        else:
+            return 'unkown'
 
     def total(self):
         '''
@@ -251,6 +266,8 @@ class Timer(object):
         isAlive = (datetime.datetime.now() - self.__starttime) < self.__duration
         return  isAlive
 
+    def progress(self):
+        return "{:.2%}".format((datetime.datetime.now() - self.__starttime).total_seconds()/self.__duration.total_seconds())
 
 class ReporterPlugin(nose.plugins.Plugin):
     """
@@ -261,8 +278,8 @@ class ReporterPlugin(nose.plugins.Plugin):
 
     def __init__(self, counter=None, report_client=None, timer=None):
         super(ReporterPlugin, self).__init__()
-        self.__counter = counter if counter else TestCounter()
         self.__report_client = report_client if report_client else None
+        self.__counter = counter
         self.__timer = timer
 
     def options(self, parser, env):
@@ -281,9 +298,8 @@ class ReporterPlugin(nose.plugins.Plugin):
                           dest='directory', default=self.getDefault(),
                           help="save output file to this directory. default is current nose worspace")
 
-        parser.add_option('--size', action='store',  metavar="FILE",
-                          dest='server_config', default=4096,
-                          help="file size limit")
+        parser.add_option('--cycle', action='store', type='string',metavar="STRING",
+                          dest='cycle', default=None, help="file size limit")
 
         ###report server config###
         parser.add_option('--reportserver', action='store_true',
@@ -341,9 +357,16 @@ class ReporterPlugin(nose.plugins.Plugin):
         self.write_hashes = conf.verbosity == 2
         self.conf = conf
         self.opt = options
-        self.result_properties = {'payload': None, 'extras': None}
+
+        if self.opt.cycle and not self.__counter:
+            self.__counter = TestCounter(cycles=self.opt.cycle)
+        elif not self.__counter:
+            self.__counter = TestCounter()
+
         if self.opt.duration and not self.__timer:
             self.__timer = Timer(self.opt.duration)
+
+        self.result_properties = {'payload': None, 'extras': None}
         #if disable report server
         if self.opt.reportserver and not self.__report_client:
             server_need = {'username':None, 'password':None, 'auth':None, 'session_create':None,
@@ -407,7 +430,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         """
         startTest: called after beforeTest(*)
         """
-        self.tid = self.__counter.next()
+        self.tid = self.__counter.next_tid()
         ctx = self.getTestCaseContext(test)
         ctx.case_start_time = reporttime()
         ctx.user_log_dir = join(ctx.case_report_tmp_dir, 'logs')
@@ -504,7 +527,12 @@ class ReporterPlugin(nose.plugins.Plugin):
             self.__report_client.updateTestCase(**self.result_properties)
 
     def report(self, stream):
+        self.__counter.next_cid()
         session_properties = {'sid': self.session_id}
+        if self.opt.duration and self.__timer:
+            session_properties.update({'progress': self.__timer.progress()})
+        elif self.opt.cycle and self.__counter:
+            session_properties.update({'progress': self.__counter.progress()})      
         if self.opt.reportserver:
             self.__report_client.updateSession(**session_properties)                              
         return None
