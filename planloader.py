@@ -24,8 +24,7 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
     def options(self, parser, env):
         """Register commandline options.
         """
-        super(PlanLoaderPlugin, self).options(parser, env))
-
+        super(PlanLoaderPlugin, self).options(parser, env)
         parser.add_option('--plan-file', action='store', type='string',metavar="STRING",
                           dest='plan_file', default='plan',
                           help="Run the tests that list in plan file")
