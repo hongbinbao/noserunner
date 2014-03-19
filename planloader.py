@@ -24,17 +24,14 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
     def options(self, parser, env):
         """Register commandline options.
         """
-        super(PlanLoaderPlugin, self).options(parser, env)
-        #parser.add_option('--stability-test-loader', action='store_true',
-        #                  dest='stability_test_loader', default=False,
-        #                  help="enable stability test loader plugin")
+        super(PlanLoaderPlugin, self).options(parser, env))
 
         parser.add_option('--plan-file', action='store', type='string',metavar="STRING",
                           dest='plan_file', default='plan',
                           help="Run the tests that list in plan file")
 
-        parser.add_option('--cycle', action='store', type='string',metavar="STRING",
-                          dest='cycles', default='1',
+        parser.add_option('--loop', action='store', type='string',metavar="STRING",
+                          dest='loops', default='1',
                           help="Run the tests with specified loop number. default will execute forever ")
 
 
@@ -50,9 +47,9 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
         self.conf = conf
         if options.plan_file:
             self.enabled = True
-        if options.cycles:
+        if options.loops:
             self.enabled = True
-            self.cycles = options.cycles
+            self.loops = options.loops
         self.plan_file = os.path.expanduser(options.plan_file)
         if not os.path.isabs(self.plan_file):
             self.plan_file = os.path.join(conf.workingDir, self.plan_file)
@@ -88,7 +85,7 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
         replace the way of loading test case using plan file.
         """
         loader = self.loader
-        names = self.getTestsFromPlanFile(plan_file_path=self.plan_file, section_name='tests', cycle=self.cycles)
+        names = self.getTestsFromPlanFile(plan_file_path=self.plan_file, section_name='tests', cycle=self.loops)
         return (None, names)
 
 
