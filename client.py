@@ -366,7 +366,6 @@ class ReportClient(object):
                                  }
         '''
         self.session_id =  kwargs.pop('sid')
-        progress = kwargs.pop('progress')
         url = self.__dict__['session_update'] % self.session_id
         headers = {'content-type': 'application/json', 'accept': 'application/json'}
         #new style API
@@ -380,10 +379,10 @@ class ReportClient(object):
         #                                }\
         #                  }\
         #          }
-        
+        #sys.stderr.write(str(kwargs)+'\n')
         values = json.dumps({'subc': 'update',
                              'token':self.token ,
-                             'data':{'endtime': reporttime(), 'status':progress}})
+                             'data' : kwargs})
         ret = request(method='post', url=url, data=values, headers=headers, timeout=REQ_TIMEOUT)
         #{u'msg': u'', u'data': {}, u'result': u'ok'}
         try:

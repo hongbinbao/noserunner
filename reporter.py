@@ -119,6 +119,12 @@ class TestCounter(object):
         else:
             return 'unkown'
 
+    def alive(self):
+        if int(self.__cid) == int(self.__total_cycle):
+            return False
+        else:
+            return True
+
     def total(self):
         '''
         return the number of test case
@@ -272,6 +278,8 @@ class Timer(object):
         p = '%0.2f' % (float((datetime.datetime.now() - self.__starttime).total_seconds())/(self.__duration.total_seconds()))
         if float(p) <= float(0):
             return '0.01'
+        if float(p) > float(1.0):
+            return '1.00'
         else: return p
         #return '%0.02f' % (float((datetime.datetime.now() - self.__starttime).total_seconds())/(self.__duration.total_seconds()))
 
@@ -536,14 +544,20 @@ class ReporterPlugin(nose.plugins.Plugin):
         self.__counter.next_cid()
         session_properties = {'sid': self.session_id}
         if self.opt.duration and self.__timer:
-            session_properties.update({'progress': self.__timer.progress()})
+            session_properties.update({'status': self.__timer.progress()})
         elif self.opt.icycle and self.__counter:
-            session_properties.update({'progress': self.__counter.progress()})
+            session_properties.update({'status': self.__counter.progress()})
         if self.opt.reportserver:
-            self.__report_client.updateSession(**session_properties)                              
+            self.__report_client.updateSession(**session_properties)                            
         return None
 
     def finalize(self, result):
-        if self.conf.stopOnError:
+        session_properties = {'sid': self.session_id}
+        if self.opt.icycle and not self.__counter.alive() and self.opt.reportserver:
+            session_properties.update({'endtime': reporttime()})
+            self.__report_client.updateSession(**session_properties)
+        if self.conf.stopOnError and self.opt.reportserver:
+            session_properties.update({'endtime': reporttime()})
+            self.__report_client.updateSession(**session_properties)
             sys.exit(1)
         return None
