@@ -305,7 +305,7 @@ class ReporterPlugin(nose.plugins.Plugin):
                           help="save output file to this directory. default is current nose worspace")
 
         parser.add_option('--cycle', action='store', type='string',metavar="STRING",
-                          dest='cycle', default=None, help="file size limit")
+                          dest='cycle', default=None, help="total cycle flag")
 
         ###report server config###
         parser.add_option('--reportserver', action='store_true',
