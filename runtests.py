@@ -46,7 +46,7 @@ if __name__ == '__main__':
         if '--cycle' in sys.argv:
             index = sys.argv.index('--cycle')
             cycle = int(sys.argv[int(index)+1])
-            argvs.append('--cycle')
+            argvs.append('--icycle')
             argvs.append(str(cycle))            
 
         if '--plan' in sys.argv:

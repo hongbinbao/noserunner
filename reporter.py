@@ -304,8 +304,8 @@ class ReporterPlugin(nose.plugins.Plugin):
                           dest='directory', default=self.getDefault(),
                           help="save output file to this directory. default is current nose worspace")
 
-        parser.add_option('--cycle', action='store', type='string',metavar="STRING",
-                          dest='cycle', default=None, help="total cycle flag")
+        parser.add_option('--icycle', action='store', type='string',metavar="STRING",
+                          dest='icycle', default=None, help="total cycle flag")
 
         ###report server config###
         parser.add_option('--reportserver', action='store_true',
@@ -364,8 +364,8 @@ class ReporterPlugin(nose.plugins.Plugin):
         self.conf = conf
         self.opt = options
 
-        if self.opt.cycle and not self.__counter:
-            self.__counter = TestCounter(cycles=self.opt.cycle)
+        if self.opt.icycle and not self.__counter:
+            self.__counter = TestCounter(cycles=self.opt.icycle)
         elif not self.__counter:
             self.__counter = TestCounter()
 
@@ -537,7 +537,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         session_properties = {'sid': self.session_id}
         if self.opt.duration and self.__timer:
             session_properties.update({'progress': self.__timer.progress()})
-        elif self.opt.cycle and self.__counter:
+        elif self.opt.icycle and self.__counter:
             session_properties.update({'progress': self.__counter.progress()})
         if self.opt.reportserver:
             self.__report_client.updateSession(**session_properties)                              
