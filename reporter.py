@@ -7,13 +7,15 @@ import time
 import uuid
 import json
 import nose
-import datetime
+import signal
 import string
 import shutil
 import zipfile
 import logging
 import datetime
+import datetime
 import traceback
+import subprocess
 from ConfigParser import ConfigParser
 from commands import getoutput as shell
 from os.path import join, exists, dirname
@@ -263,6 +265,21 @@ def grabLog(path):
         shell('adb logcat -v time -d > %s ' % join(path, LOG_FILE_NAME))
     zipFolder(join(dirname(path), 'logs'), join(dirname(path), 'log.zip'))
 
+def makeLog(path):
+    '''
+    pull log/snapshot from device to local report folder
+    '''
+    path = _mkdir(path)
+    serial = os.environ['ANDROID_SERIAL'] if os.environ.has_key('ANDROID_SERIAL') else None
+    #snapshot & system log
+    if serial:
+        shell('adb -s %s shell screencap /sdcard/%s' % (serial, FAILURE_SNAPSHOT_NAME))
+        shell('adb -s %s pull /sdcard/%s %s' % (serial, FAILURE_SNAPSHOT_NAME, path))
+    else:
+        shell('adb shell screencap /sdcard/%s' % FAILURE_SNAPSHOT_NAME)
+        shell('adb pull /sdcard/%s %s' % (FAILURE_SNAPSHOT_NAME, path))
+    zipFolder(join(dirname(path), 'logs'), join(dirname(path), 'log.zip'))
+
 
 class Timer(object):
     def __init__(self, duration):
@@ -283,6 +300,27 @@ class Timer(object):
         else: return p
         #return '%0.02f' % (float((datetime.datetime.now() - self.__starttime).total_seconds())/(self.__duration.total_seconds()))
 
+class LogWrapper(object):
+    def __init__(self, path):
+        self.__fpath = path
+        self.__f = None
+        self.__p = None
+        self.__serial = os.environ['ANDROID_SERIAL'] if os.environ.has_key('ANDROID_SERIAL') else None
+
+
+    def start(self):
+        argv = ['adb', 'logcat', '-v', 'time'] if not self.__serial else ['adb', '-s', self.__serial, 'logcat', '-v', 'time']
+        self.__f = open(self.__fpath, 'w+')
+        self.__p = subprocess.Popen(argv, stdout=self.__f, close_fds=True)
+
+    def stop(self):
+        try:
+            self.__f.close()
+            self.__p.kill()
+            #os.kill(self.__p.pid, signal.SIGUSR1)
+        except Exception,e:
+            pass
+
 class ReporterPlugin(nose.plugins.Plugin):
     """
     Write test result to $WORKSPACE/result.txt or ./result.txt
@@ -295,6 +333,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         self.__report_client = report_client if report_client else None
         self.__counter = counter
         self.__timer = timer
+        self.__log_wrapper = None
 
     def options(self, parser, env):
         """ 
@@ -411,7 +450,7 @@ class ReporterPlugin(nose.plugins.Plugin):
             pass
 
     def begin(self):
-        self.session_id = self.__counter.sid
+        self.session_id = self.__counter.sid  
         self.test_start_time = getattr(self, 'test_start_time', None)
         if not self.test_start_time:
             self.test_start_time = reporttime()
@@ -424,6 +463,9 @@ class ReporterPlugin(nose.plugins.Plugin):
         session_properties = {'sid': self.session_id,
                               'starttime': self.test_start_time
                               }
+        self.cid = self.__counter.next_cid()
+        if self.write_hashes:
+            sys.stderr.write('begin cycle: %s \n' % (self.cid))                          
         if self.opt.reportserver and not self.__report_client.created:
             self.__report_client.createSession(**session_properties)
 
@@ -448,6 +490,10 @@ class ReporterPlugin(nose.plugins.Plugin):
         ctx = self.getTestCaseContext(test)
         ctx.case_start_time = reporttime()
         ctx.user_log_dir = join(ctx.case_report_tmp_dir, 'logs')
+        path = _mkdir(ctx.user_log_dir)
+        log_file = join(path, LOG_FILE_NAME)
+        self.__log_wrapper = LogWrapper(log_file)
+        self.__log_wrapper.start()
         if self.write_hashes:
             self._write('#%s %s ' % (str(self.tid), str(ctx.case_start_time)))
 
@@ -460,9 +506,12 @@ class ReporterPlugin(nose.plugins.Plugin):
         exctype, value, tb = err
 
         ctx = self.getTestCaseContext(test)
-        #common log output
-        grabLog(ctx.user_log_dir)
-        shutil.move(ctx.case_report_tmp_dir, self._fail_report_path)
+        try:
+            makeLog(ctx.user_log_dir)
+            self.__log_wrapper.stop()
+            shutil.move(ctx.case_report_tmp_dir, self._fail_report_path)
+        except:
+            pass
 
         self.result_properties.update({'extras': {'screenshot_at_failure': ctx.screenshot_at_failure,
                                                   'log': ctx.log,
@@ -477,9 +526,12 @@ class ReporterPlugin(nose.plugins.Plugin):
         self.result_properties.clear()
         
         ctx = self.getTestCaseContext(test)
-        #last step snapshot
-        grabLog(ctx.user_log_dir)
-        shutil.move(ctx.case_report_tmp_dir, self._error_report_path)
+        try:
+            makeLog(ctx.user_log_dir)
+            self.__log_wrapper.stop()
+            shutil.move(ctx.case_report_tmp_dir, self._error_report_path)
+        except:
+            pass
 
         self.result_properties.update({'extras': {'screenshot_at_failure': ctx.screenshot_at_failure,
                                                   'log': ctx.log,
@@ -499,6 +551,7 @@ class ReporterPlugin(nose.plugins.Plugin):
                                                   'trace':formatOutput(ctx.case_dir_name, 'fail', err)
                                                   }
                                        })
+
         if self.__timer and not self.__timer.alive():
             self.conf.stopOnError = True
         if self.opt.reportserver:
@@ -535,13 +588,13 @@ class ReporterPlugin(nose.plugins.Plugin):
                                                    'result': 'pass'
                                                   }
                                       })
+        self.__log_wrapper.stop()
         if self.__timer and not self.__timer.alive():
             self.conf.stopOnError = True
         if self.opt.reportserver:
             self.__report_client.updateTestCase(**self.result_properties)
 
     def report(self, stream):
-        self.__counter.next_cid()
         session_properties = {'sid': self.session_id}
         if self.opt.duration and self.__timer:
             session_properties.update({'status': self.__timer.progress()})
@@ -552,6 +605,8 @@ class ReporterPlugin(nose.plugins.Plugin):
         return None
 
     def finalize(self, result):
+        if self.write_hashes:
+            self._write('end cycle: %s \n' % (self.cid)) 
         session_properties = {'sid': self.session_id}
         if self.opt.icycle and not self.__counter.alive() and self.opt.reportserver:
             session_properties.update({'endtime': reporttime()})
