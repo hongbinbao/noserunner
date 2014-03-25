@@ -369,7 +369,7 @@ class LogCacheWrapper(threading.Thread):
 
 class ReporterPlugin(nose.plugins.Plugin):
     """
-    Write test result to $WORKSPACE/result.txt or ./result.txt
+    handle test output.
     """
     name = 'reporter'
     #score = 200
