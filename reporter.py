@@ -1,12 +1,15 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*- 
 
+
 import os
 import sys
+import shlex
 import time
 import uuid
 import json
 import nose
+import Queue
 import signal
 import string
 import shutil
@@ -16,10 +19,12 @@ import datetime
 import datetime
 import traceback
 import subprocess
+import threading
 from ConfigParser import ConfigParser
 from commands import getoutput as shell
 from os.path import join, exists, dirname
 from client import ReportClient
+
 
 log = logging.getLogger(__name__)
 '''global log instance'''
@@ -40,6 +45,9 @@ FAILURE_SNAPSHOT_NAME = 'failure.png'
 '''default string name of result file. can be modify by user-specify'''
 
 REPORT_TIME_STAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
+
+ANDROID_LOG_SHELL = 'adb logcat -v time'
+'''android log shell command line'''
 
 def uniqueID():
     '''
@@ -300,26 +308,64 @@ class Timer(object):
         else: return p
         #return '%0.02f' % (float((datetime.datetime.now() - self.__starttime).total_seconds())/(self.__duration.total_seconds()))
 
-class LogWrapper(object):
-    def __init__(self, path):
-        self.__fpath = path
-        self.__f = None
-        self.__p = None
-        self.__serial = os.environ['ANDROID_SERIAL'] if os.environ.has_key('ANDROID_SERIAL') else None
-
-
+class LogHandler(object):
+    def __init__(self, cmd):
+        self.__cmd = cmd
+        self.__cache_queue = Queue.Queue()
+        self.__logger_proc = None
+        self.__cache_thread = None
+        
     def start(self):
-        argv = ['adb', 'logcat', '-v', 'time'] if not self.__serial else ['adb', '-s', self.__serial, 'logcat', '-v', 'time']
-        self.__f = open(self.__fpath, 'w+')
-        self.__p = subprocess.Popen(argv, stdout=self.__f, close_fds=True)
+        self.__logger_proc = subprocess.Popen(shlex.split(ANDROID_LOG_SHELL),\
+                                              stdout=subprocess.PIPE,\
+                                              close_fds=True,\
+                                              preexec_fn=self.check)
+        self.__cache_thread = LogCacheWrapper(self.__logger_proc.stdout, self.__cache_queue)
+        self.__cache_thread.start()
+
 
     def stop(self):
-        try:
-            self.__f.close()
-            self.__p.kill()
-            #os.kill(self.__p.pid, signal.SIGUSR1)
-        except Exception,e:
-            pass
+        if self.__cache_thread:
+            try:
+                self.__cache_thread.stop()
+            except: pass
+        if self.__logger_proc:
+            try:
+                self.__logger_proc.kill()
+            except: pass
+
+    def check(self):
+        pass
+
+    def available(self):
+        if not self.__logger_proc or not self.__cache_thread:
+            return False
+        return self.__cache_thread.is_alive() and not self.__logger_proc.poll()
+
+    def save(self, path):
+        with open(path, 'w+') as f:
+            for i in range(self.__cache_queue.qsize()):
+               line = self.__cache_queue.get()
+               f.write(line)
+
+    def drop(self):
+        self.__cache_queue.queue.clear()
+            
+
+class LogCacheWrapper(threading.Thread):
+    def __init__(self, fd, queue):
+        threading.Thread.__init__(self)
+        self.daemon = True
+        self.__fd = fd
+        self.__queue = queue
+        self.__stop = False
+
+    def stop(self):
+        self.__stop = True
+
+    def run(self):
+        for line in iter(self.__fd.readline, ''):
+            self.__queue.put(line)
 
 class ReporterPlugin(nose.plugins.Plugin):
     """
@@ -333,7 +379,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         self.__report_client = report_client if report_client else None
         self.__counter = counter
         self.__timer = timer
-        self.__log_wrapper = None
+        self.__log_handler = LogHandler(ANDROID_LOG_SHELL)
 
     def options(self, parser, env):
         """ 
@@ -449,6 +495,13 @@ class ReporterPlugin(nose.plugins.Plugin):
         except:
             pass
 
+    def prepareTest(self, test):
+        '''
+        enable log handler.
+        '''
+        if not self.__log_handler.available():
+            self.__log_handler.start()
+
     def begin(self):
         self.session_id = self.__counter.sid  
         self.test_start_time = getattr(self, 'test_start_time', None)
@@ -492,8 +545,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         ctx.user_log_dir = join(ctx.case_report_tmp_dir, 'logs')
         path = _mkdir(ctx.user_log_dir)
         log_file = join(path, LOG_FILE_NAME)
-        self.__log_wrapper = LogWrapper(log_file)
-        self.__log_wrapper.start()
+
         if self.write_hashes:
             self._write('#%s %s ' % (str(self.tid), str(ctx.case_start_time)))
 
@@ -505,10 +557,11 @@ class ReporterPlugin(nose.plugins.Plugin):
         self.result_properties.clear()
         exctype, value, tb = err
 
-        ctx = self.getTestCaseContext(test)
         try:
+            ctx = self.getTestCaseContext(test)
             makeLog(ctx.user_log_dir)
-            self.__log_wrapper.stop()
+            log_file = join(ctx.user_log_dir, LOG_FILE_NAME)
+            self.__log_handler.save(log_file)
             shutil.move(ctx.case_report_tmp_dir, self._fail_report_path)
         except:
             pass
@@ -525,10 +578,11 @@ class ReporterPlugin(nose.plugins.Plugin):
         '''
         self.result_properties.clear()
         
-        ctx = self.getTestCaseContext(test)
         try:
+            ctx = self.getTestCaseContext(test)
             makeLog(ctx.user_log_dir)
-            self.__log_wrapper.stop()
+            log_file = join(ctx.user_log_dir, LOG_FILE_NAME)
+            self.__log_handler.save(log_file)
             shutil.move(ctx.case_report_tmp_dir, self._error_report_path)
         except:
             pass
@@ -588,7 +642,7 @@ class ReporterPlugin(nose.plugins.Plugin):
                                                    'result': 'pass'
                                                   }
                                       })
-        self.__log_wrapper.stop()
+        self.__log_handler.drop()
         if self.__timer and not self.__timer.alive():
             self.conf.stopOnError = True
         if self.opt.reportserver:
