@@ -560,7 +560,7 @@ class ReporterPlugin(nose.plugins.Plugin):
             ctx = self.getTestCaseContext(test)
             log_file = join(ctx.user_log_dir, LOG_FILE_NAME)
             self.__log_handler.save(log_file)
-            makeLog(ctx.user_log_dir)
+            #makeLog(ctx.user_log_dir)
             #shutil.move(ctx.case_report_tmp_dir, self._fail_report_path)
         except:
             pass
@@ -581,7 +581,7 @@ class ReporterPlugin(nose.plugins.Plugin):
             ctx = self.getTestCaseContext(test)
             log_file = join(ctx.user_log_dir, LOG_FILE_NAME)
             self.__log_handler.save(log_file)
-            makeLog(ctx.user_log_dir)
+            #makeLog(ctx.user_log_dir)
         except:
             pass
 
@@ -606,7 +606,11 @@ class ReporterPlugin(nose.plugins.Plugin):
         trace_log_path = join(ctx.user_log_dir, 'trace.txt')
         with open(trace_log_path, 'w+') as f:
             f.write(str(self.result_properties['payload']['trace']))
-        shutil.move(ctx.case_report_tmp_dir, self._fail_report_path)
+        makeLog(ctx.user_log_dir)
+        try:
+            shutil.move(ctx.case_report_tmp_dir, self._fail_report_path)
+        except:
+            pass
         if self.__timer and not self.__timer.alive():
             self.conf.stopOnError = True
         if self.opt.reportserver:
@@ -628,7 +632,11 @@ class ReporterPlugin(nose.plugins.Plugin):
         trace_log_path = join(ctx.user_log_dir, 'trace.txt')
         with open(trace_log_path, 'w+') as f:
             f.write(str(self.result_properties['payload']['trace']))
-        shutil.move(ctx.case_report_tmp_dir, self._error_report_path)
+        makeLog(ctx.user_log_dir)
+        try:
+            shutil.move(ctx.case_report_tmp_dir, self._error_report_path)
+        except:
+            pass
         if self.__timer and not self.__timer.alive():
             self.conf.stopOnError = True
 
