@@ -273,19 +273,20 @@ def grabLog(path):
         shell('adb logcat -v time -d > %s ' % join(path, LOG_FILE_NAME))
     zipFolder(join(dirname(path), 'logs'), join(dirname(path), 'log.zip'))
 
-def makeLog(path):
+def makeLog(path, result='failure'):
     '''
     pull log/snapshot from device to local report folder
     '''
     path = _mkdir(path)
+    snapshot_name = '%s%s%s' % (result, '.', 'png')
     serial = os.environ['ANDROID_SERIAL'] if os.environ.has_key('ANDROID_SERIAL') else None
     #snapshot & system log
     if serial:
-        shell('adb -s %s shell screencap /sdcard/%s' % (serial, FAILURE_SNAPSHOT_NAME))
-        shell('adb -s %s pull /sdcard/%s %s' % (serial, FAILURE_SNAPSHOT_NAME, path))
+        shell('adb -s %s shell screencap /sdcard/%s' % (serial, snapshot_name))
+        shell('adb -s %s pull /sdcard/%s %s' % (serial, snapshot_name, path))
     else:
-        shell('adb shell screencap /sdcard/%s' % FAILURE_SNAPSHOT_NAME)
-        shell('adb pull /sdcard/%s %s' % (FAILURE_SNAPSHOT_NAME, path))
+        shell('adb shell screencap /sdcard/%s' % snapshot_name)
+        shell('adb pull /sdcard/%s %s' % (snapshot_name, path))
     zipFolder(join(dirname(path), 'logs'), join(dirname(path), 'log.zip'))
 
 
@@ -509,7 +510,7 @@ class ReporterPlugin(nose.plugins.Plugin):
             self.test_start_time = reporttime()
         self.opt.directory = self.conf.workingDir
         self._report_path = _mkdir(join(join(self.opt.directory, 'report'), str(self.test_start_time).replace(' ', '_')))
-        self._all_report_path = _mkdir(join(self._report_path, 'all'))
+        self._pass_report_path = _mkdir(join(self._report_path, 'pass'))
         self._fail_report_path = _mkdir(join(self._report_path, 'fail'))
         self._error_report_path = _mkdir(join(self._report_path, 'error'))
         self._timeout_report_path = _mkdir(join(self._report_path, 'timeout'))
@@ -527,7 +528,6 @@ class ReporterPlugin(nose.plugins.Plugin):
         ctx = TestCaseContext(self._fail_report_path, self._error_report_path)
         ctx.case_dir_name = '%s%s%s' % (class_name, '.', method_name)
         setattr(test.context, 'contexts', ctx)
-
 
     def getTestCaseContext(self, test):
         return getattr(test.context, 'contexts')
@@ -632,7 +632,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         trace_log_path = join(ctx.user_log_dir, 'trace.txt')
         with open(trace_log_path, 'w+') as f:
             f.write(str(self.result_properties['payload']['trace']))
-        makeLog(ctx.user_log_dir)
+        makeLog(ctx.user_log_dir, 'error')
         try:
             shutil.move(ctx.case_report_tmp_dir, self._error_report_path)
         except:
@@ -655,7 +655,17 @@ class ReporterPlugin(nose.plugins.Plugin):
                                                    'result': 'pass'
                                                   }
                                       })
-        self.__log_handler.drop()
+        #self.__log_handler.drop()
+        log_file = join(ctx.user_log_dir, LOG_FILE_NAME)
+        self.__log_handler.save(log_file)
+        trace_log_path = join(ctx.user_log_dir, 'trace.txt')
+        with open(trace_log_path, 'w+') as f:
+            f.write(str(self.result_properties['payload']['result']))
+        makeLog(ctx.user_log_dir, 'pass')
+        try:
+            shutil.move(ctx.case_report_tmp_dir, self._pass_report_path)
+        except:
+            pass
         if self.__timer and not self.__timer.alive():
             self.conf.stopOnError = True
         if self.opt.reportserver:
