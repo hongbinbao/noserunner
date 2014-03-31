@@ -207,8 +207,13 @@ class TestCaseContext(object):
 
     #nose frm need
     @property
-    def case_report_dir_path(self):
+    def fail_case_report_dir_path(self):
         self.__case_report_dir_path = join(self.__output_failures, self.case_report_dir_name)
+        return self.__case_report_dir_path
+
+    @property
+    def error_case_report_dir_path(self):
+        self.__case_report_dir_path = join(self.__output_errors, self.case_report_dir_name)
         return self.__case_report_dir_path
 
     @property
@@ -217,13 +222,23 @@ class TestCaseContext(object):
         return self.__case_report_tmp_dir
 
     @property
-    def screenshot_at_failure(self):
-        self.__screenshot_at_failure = join(join(self.case_report_dir_path, 'logs'), FAILURE_SNAPSHOT_NAME)
+    def fail_screenshot_at_failure(self):
+        self.__screenshot_at_failure = join(join(self.fail_case_report_dir_path, 'logs'), FAILURE_SNAPSHOT_NAME)
         return self.__screenshot_at_failure
 
     @property
-    def log(self):
-        self.__log = join(self.case_report_dir_path, 'log.zip')
+    def fail_log(self):
+        self.__log = join(self.fail_case_report_dir_path, 'log.zip')
+        return self.__log
+
+    @property
+    def error_screenshot_at_failure(self):
+        self.__screenshot_at_failure = join(join(self.error_case_report_dir_path, 'logs'), FAILURE_SNAPSHOT_NAME)
+        return self.__screenshot_at_failure
+
+    @property
+    def error_log(self):
+        self.__log = join(self.error_case_report_dir_path, 'log.zip')
         return self.__log
 
     @property
@@ -565,8 +580,8 @@ class ReporterPlugin(nose.plugins.Plugin):
         except:
             pass
 
-        self.result_properties.update({'extras': {'screenshot_at_failure': ctx.screenshot_at_failure,
-                                                  'log': ctx.log,
+        self.result_properties.update({'extras': {'screenshot_at_failure': ctx.fail_screenshot_at_failure,
+                                                  'log': ctx.fail_log,
                                                   'expect': ctx.expect,
                                                   }
                                       })
@@ -585,8 +600,8 @@ class ReporterPlugin(nose.plugins.Plugin):
         except:
             pass
 
-        self.result_properties.update({'extras': {'screenshot_at_failure': ctx.screenshot_at_failure,
-                                                  'log': ctx.log,
+        self.result_properties.update({'extras': {'screenshot_at_failure': ctx.error_screenshot_at_failure,
+                                                  'log': ctx.error_log,
                                                   'expect': ctx.expect,
                                                  }
                                        })
@@ -632,7 +647,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         trace_log_path = join(ctx.user_log_dir, 'trace.txt')
         with open(trace_log_path, 'w+') as f:
             f.write(str(self.result_properties['payload']['trace']))
-        makeLog(ctx.user_log_dir, 'error')
+        makeLog(ctx.user_log_dir)
         try:
             shutil.move(ctx.case_report_tmp_dir, self._error_report_path)
         except:

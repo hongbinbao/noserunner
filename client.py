@@ -448,20 +448,18 @@ class UploadThread(threading.Thread):
         log = kwargs['extras']['log']
         snapshot = kwargs['extras']['screenshot_at_failure']
         files = {'file': open(snapshot, 'rb')}
-        headers = {'content-type': 'image/png','Ext-Type':'%s%s%s' % ('expect', ':', 'step'), 'accept': 'application/json'}
+        headers = {'content-type': 'image/png','Ext-Type':'%s%s%s' % ('expect', ':', 'step'), 'accept': 'application/json'}     
         try:
-            ret = request(method='put', url=file_url, headers=headers, data=files['file'])
+            ret = request(method='put', url=file_url, headers=headers, data=files['file'], timeout=10)
         except Exception, e:
-            #self.log(str(e))
             pass
         headers = {'content-type': 'application/zip',  'accept': 'application/json'}
         files = {'file': open(log, 'rb')}
         try:
-            ret = request(method='put', url=file_url, headers=headers, data=files['file'])
+            ret = request(method='put', url=file_url, headers=headers, data=files['file'], timeout=10)
         except Exception, e:
             #ret{u'msg': u'', u'data': {u'fileid': u'/file/3be61a9aef2940fc84f01278b9d6336f'}, u'result': u'ok'}
             pass
-
     def stop(self):
         '''
         Stop the thread.
