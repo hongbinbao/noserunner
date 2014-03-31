@@ -361,7 +361,7 @@ class LogHandler(object):
     def save(self, path):
         with open(path, 'w+') as f:
             for i in range(self.__cache_queue.qsize()):
-               line = self.__cache_queue.get()
+               line = self.__cache_queue.get(block=True)
                f.write(line)
 
     def drop(self):

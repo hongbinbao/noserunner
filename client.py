@@ -1,6 +1,7 @@
 import requests
 import StringIO
 import zipfile
+import logging
 from uuid import uuid1
 from ConfigParser import ConfigParser
 import json, hashlib, math, time, threading, sys, os
@@ -10,6 +11,7 @@ REPORT_TIME_STAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
 AUTH_REQ_TIMEOUT = 3
 REQ_TIMEOUT = 3
 
+logging.getLogger("requests").setLevel(logging.WARNING)
 ###authentication###
 #method: POST
 #request URI      : http://ats.borqs.com/smartapi/account/login
