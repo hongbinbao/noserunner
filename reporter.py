@@ -9,6 +9,7 @@ import time
 import uuid
 import json
 import nose
+import time
 import Queue
 import signal
 import string
@@ -46,7 +47,7 @@ FAILURE_SNAPSHOT_NAME = 'failure.png'
 
 REPORT_TIME_STAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
 
-ANDROID_LOG_SHELL = 'adb logcat -v time'
+ANDROID_LOG_SHELL = 'adb %s %s logcat -v time'
 '''android log shell command line'''
 
 def uniqueID():
@@ -332,7 +333,13 @@ class LogHandler(object):
         self.__cache_thread = None
         
     def start(self):
-        self.__logger_proc = subprocess.Popen(shlex.split(ANDROID_LOG_SHELL),\
+        cmd = None
+        serial = os.environ['ANDROID_SERIAL'] if os.environ.has_key('ANDROID_SERIAL') else None
+        if serial:
+            cmd = ANDROID_LOG_SHELL % ('-s', serial)
+        else:
+            cmd = ANDROID_LOG_SHELL % ('', '')
+        self.__logger_proc = subprocess.Popen(shlex.split(cmd),\
                                               stdout=subprocess.PIPE,\
                                               close_fds=True,\
                                               preexec_fn=self.check)
@@ -360,6 +367,9 @@ class LogHandler(object):
 
     def save(self, path):
         with open(path, 'w+') as f:
+            while self.__cache_queue.qsize() <= 0:
+                time.sleep(1)
+                continue
             for i in range(self.__cache_queue.qsize()):
                line = self.__cache_queue.get(block=True)
                f.write(line)
