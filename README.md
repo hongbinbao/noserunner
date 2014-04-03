@@ -61,7 +61,7 @@ runner based on python nose testing framework
         
     """
 
-### make entire logcat log
+### Make entire logcat log
     how to:
         python makelog.py --help
 
