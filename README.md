@@ -60,7 +60,11 @@ runner based on python nose testing framework
         user_log_dir_path = ctx.user_log_dir
         
     """
-    
+
+### make entire logcat log
+    how to:
+        python makelog.py --help
+
 ### Demo
 
     ├── client.py                                       #nose plugin module
