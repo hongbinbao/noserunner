@@ -63,7 +63,7 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
         self.loader = loader
         self.suiteClass = loader.suiteClass
 
-    def getTestsFromPlanFile(self, plan_file_path, section_name, cycle):
+    def __getTestsFromPlanFile(self, plan_file_path, section_name, cycle):
         '''
         load test sequence list from plan file 
         '''
@@ -84,7 +84,7 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
         replace the way of loading test case using plan file.
         """
         loader = self.loader
-        names = self.getTestsFromPlanFile(plan_file_path=self.plan_file, section_name='tests', cycle=self.loops)
+        names = self.__getTestsFromPlanFile(plan_file_path=self.plan_file, section_name='tests', cycle=self.loops)
         return (None, names)
 
 

@@ -50,7 +50,7 @@ REPORT_TIME_STAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
 ANDROID_LOG_SHELL = 'adb %s %s logcat -v time'
 '''android log shell command line'''
 
-def uniqueID():
+def _uniqueID():
     '''
     return a unique id of test session.
     '''
@@ -77,14 +77,14 @@ def _mkdir(path):
         os.makedirs(path)
     return path
 
-def writeResultToFile(output, content):
+def _writeResultToFile(output, content):
     '''
     Used to generated brief result to local result.txt file.
     '''
     with open(output, 'a') as f:
         f.write('%s%s' % (json.dumps(content), os.linesep))
 
-def formatOutput(name, etype, err):
+def _formatOutput(name, etype, err):
     '''
     change the output format of exception
     '''
@@ -97,7 +97,7 @@ class TestCounter(object):
     Test session counter.
     '''
     def __init__(self, sid=None, tid=0, cid=0, cycles=None):
-        self.__sid = sid if sid else uniqueID()
+        self.__sid = sid if sid else _uniqueID()
         self.__tid = tid
         self.__cid = cid
         self.__total_cycle = cycles
@@ -246,7 +246,7 @@ class TestCaseContext(object):
     def expect(self):
         return self.__expect
 
-def zipFolder(folder_name, file_name, includeEmptyDIr=False):
+def _zipFolder(folder_name, file_name, includeEmptyDIr=False):
     '''
     create a zip file for folder
     '''
@@ -272,7 +272,7 @@ def zipFolder(folder_name, file_name, includeEmptyDIr=False):
         if ziper != None:
             ziper.close()
 
-def grabLog(path):
+def _grabLog(path):
     '''
     pull log/snapshot from device to local report folder
     '''
@@ -287,9 +287,9 @@ def grabLog(path):
         shell('adb shell screencap /sdcard/%s' % FAILURE_SNAPSHOT_NAME)
         shell('adb pull /sdcard/%s %s' % (FAILURE_SNAPSHOT_NAME, path))
         shell('adb logcat -v time -d > %s ' % join(path, LOG_FILE_NAME))
-    zipFolder(join(dirname(path), 'logs'), join(dirname(path), 'log.zip'))
+    _zipFolder(join(dirname(path), 'logs'), join(dirname(path), 'log.zip'))
 
-def makeLog(path, result='failure'):
+def _makeLog(path, result='failure'):
     '''
     pull log/snapshot from device to local report folder
     '''
@@ -303,7 +303,7 @@ def makeLog(path, result='failure'):
     else:
         shell('adb shell screencap /sdcard/%s' % snapshot_name)
         shell('adb pull /sdcard/%s %s' % (snapshot_name, path))
-    zipFolder(join(dirname(path), 'logs'), join(dirname(path), 'log.zip'))
+    _zipFolder(join(dirname(path), 'logs'), join(dirname(path), 'log.zip'))
 
 
 class Timer(object):
@@ -420,7 +420,7 @@ class ReporterPlugin(nose.plugins.Plugin):
                           help="save output file to this directory")
 
         parser.add_option('--directory', action='store_true',
-                          dest='directory', default=self.getDefault(),
+                          dest='directory', default=self.__getDefault(),
                           help="save output file to this directory. default is current nose worspace")
 
         parser.add_option('--icycle', action='store', type='string',metavar="STRING",
@@ -436,12 +436,12 @@ class ReporterPlugin(nose.plugins.Plugin):
                           help="specify the server config file path")
 
         parser.add_option('--duration', dest='duration', type='string',metavar="STRING",
-                          action='callback', callback=self._validate_duration, 
+                          action='callback', callback=self.__validate_duration, 
                           help='The minumum test duration before ending the test.\
                                   Here format must follow next format: xxDxxHxxMxxS.\
                                   e.g. --duration=2D09H30M12S, which means 2 days, 09 hours, 30 minutes and 12 seconds')
 
-    def _validate_duration(self, option, opt, value, parser):
+    def __validate_duration(self, option, opt, value, parser):
         '''
         '''
         value = string.lower(value)
@@ -465,7 +465,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         times = datetime.timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)      
         setattr(parser.values, option.dest, times)
 
-    def getDefault(self):
+    def __getDefault(self):
         workspace = os.getcwd()
         if 'WORKSPACE' in os.environ:
             ws = os.environ['WORKSPACE']
@@ -512,7 +512,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         """
         self.stream = stream
 
-    def _write(self, output):
+    def __write(self, output):
         '''
         Write output as content
         '''
@@ -548,30 +548,30 @@ class ReporterPlugin(nose.plugins.Plugin):
         if self.opt.reportserver and not self.__report_client.created:
             self.__report_client.createSession(**session_properties)
 
-    def setTestCaseContext(self, test):
+    def __setTestCaseContext(self, test):
         module_name, class_name, method_name = test.id().split('.')[-3:]
         ctx = TestCaseContext(self._fail_report_path, self._error_report_path)
         ctx.case_dir_name = '%s%s%s' % (class_name, '.', method_name)
         setattr(test.context, 'contexts', ctx)
 
-    def getTestCaseContext(self, test):
+    def __getTestCaseContext(self, test):
         return getattr(test.context, 'contexts')
 
     def prepareTestCase(self, test):
-        self.setTestCaseContext(test)
+        self.__setTestCaseContext(test)
 
     def startTest(self, test):
         """
         startTest: called after beforeTest(*)
         """
         self.tid = self.__counter.next_tid()
-        ctx = self.getTestCaseContext(test)
+        ctx = self.__getTestCaseContext(test)
         ctx.case_start_time = reporttime()
         ctx.user_log_dir = join(ctx.case_report_tmp_dir, 'logs')
         path = _mkdir(ctx.user_log_dir)
 
         if self.write_hashes:
-            self._write('#%s %s ' % (str(self.tid), str(ctx.case_start_time)))
+            self.__write('#%s %s ' % (str(self.tid), str(ctx.case_start_time)))
 
 
     def handleFailure(self, test, err):
@@ -582,7 +582,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         exctype, value, tb = err
 
         try:
-            ctx = self.getTestCaseContext(test)
+            ctx = self.__getTestCaseContext(test)
             log_file = join(ctx.user_log_dir, LOG_FILE_NAME)
             self.__log_handler.save(log_file)
             #makeLog(ctx.user_log_dir)
@@ -603,7 +603,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         self.result_properties.clear()
         
         try:
-            ctx = self.getTestCaseContext(test)
+            ctx = self.__getTestCaseContext(test)
             log_file = join(ctx.user_log_dir, LOG_FILE_NAME)
             self.__log_handler.save(log_file)
             #makeLog(ctx.user_log_dir)
@@ -617,7 +617,7 @@ class ReporterPlugin(nose.plugins.Plugin):
                                        })
 
     def addFailure(self, test, err, capt=None, tbinfo=None):
-        ctx = self.getTestCaseContext(test)
+        ctx = self.__getTestCaseContext(test)
         ctx.case_end_time = reporttime()
         #payload data
         self.result_properties.update({'payload': {'tid': self.tid,
@@ -625,13 +625,13 @@ class ReporterPlugin(nose.plugins.Plugin):
                                                   'starttime': ctx.case_start_time,
                                                   'endtime': ctx.case_end_time,
                                                   'result': 'fail',
-                                                  'trace':formatOutput(ctx.case_dir_name, 'fail', err)
+                                                  'trace':_formatOutput(ctx.case_dir_name, 'fail', err)
                                                   }
                                        })
         trace_log_path = join(ctx.user_log_dir, 'trace.txt')
         with open(trace_log_path, 'w+') as f:
             f.write(str(self.result_properties['payload']['trace']))
-        makeLog(ctx.user_log_dir)
+        _makeLog(ctx.user_log_dir)
         try:
             shutil.move(ctx.case_report_tmp_dir, self._fail_report_path)
         except:
@@ -643,7 +643,7 @@ class ReporterPlugin(nose.plugins.Plugin):
 
     #remote upload
     def addError(self, test, err, capt=None):
-        ctx = self.getTestCaseContext(test)
+        ctx = self.__getTestCaseContext(test)
         ctx.case_end_time = reporttime()
 
         self.result_properties.update({'payload': {'tid': self.tid,
@@ -651,13 +651,13 @@ class ReporterPlugin(nose.plugins.Plugin):
                                                   'starttime': ctx.case_start_time,
                                                   'endtime': ctx.case_end_time,
                                                   'result': 'error',
-                                                  'trace':formatOutput(ctx.case_dir_name, 'error', err)
+                                                  'trace':_formatOutput(ctx.case_dir_name, 'error', err)
                                                   }
                                        })
         trace_log_path = join(ctx.user_log_dir, 'trace.txt')
         with open(trace_log_path, 'w+') as f:
             f.write(str(self.result_properties['payload']['trace']))
-        makeLog(ctx.user_log_dir)
+        _makeLog(ctx.user_log_dir)
         try:
             shutil.move(ctx.case_report_tmp_dir, self._error_report_path)
         except:
@@ -670,7 +670,7 @@ class ReporterPlugin(nose.plugins.Plugin):
 
     #remote upload
     def addSuccess(self, test, capt=None):
-        ctx = self.getTestCaseContext(test)
+        ctx = self.__getTestCaseContext(test)
         ctx.case_end_time = reporttime()
         self.result_properties.clear()
         self.result_properties.update({'payload': {'tid': self.tid,
@@ -686,7 +686,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         trace_log_path = join(ctx.user_log_dir, 'trace.txt')
         with open(trace_log_path, 'w+') as f:
             f.write(str(self.result_properties['payload']['result']))
-        makeLog(ctx.user_log_dir, 'pass')
+        _makeLog(ctx.user_log_dir, 'pass')
         try:
             shutil.move(ctx.case_report_tmp_dir, self._pass_report_path)
         except:
@@ -708,7 +708,7 @@ class ReporterPlugin(nose.plugins.Plugin):
 
     def finalize(self, result):
         if self.write_hashes:
-            self._write('end cycle: %s \n' % (self.cid)) 
+            self.__write('end cycle: %s \n' % (self.cid)) 
         session_properties = {'sid': self.session_id}
         if self.opt.icycle and not self.__counter.alive() and self.opt.reportserver:
             session_properties.update({'endtime': reporttime()})
