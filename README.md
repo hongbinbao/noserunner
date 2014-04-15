@@ -59,7 +59,7 @@ runner based on python nose testing framework
     def testMethod():
         ctx = contexts 
         user_log_dir_path = ctx.user_log_dir
-        ctx.device_config['deviceid']
+        device_id = ctx.device_config['deviceid']
         
     """
 
