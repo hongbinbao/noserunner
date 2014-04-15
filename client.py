@@ -69,27 +69,6 @@ def reporttime():
     '''
     return time.strftime(REPORT_TIME_STAMP_FORMAT, time.localtime(time.time()))
 
-def getServerConfiguration(config):
-    ret = {}
-    cf = ConfigParser()
-    cf.read(config)
-    ret.update({'username': cf.get('account', 'username'),\
-                'password': cf.get('account', 'password'),\
-                'auth': cf.get('server', 'auth'),\
-                'session_create': cf.get('server', 'session_create'),\
-                'session_update': cf.get('server', 'session_update'),\
-                'case_update': cf.get('server', 'case_update'),\
-                'file_upload': cf.get('server', 'file_upload'),\
-                'product': cf.get('device', 'product'),
-                'revision': cf.get('device', 'revision'),
-                'deviceid': cf.get('device', 'deviceid'),
-                'planname': cf.get('device', 'planname'),
-                'screen_width': cf.get('device', 'screen_width'),
-                'screen_height': cf.get('device', 'screen_height')               
-               })
-    return ret
-
-
 def getContentType(filename):
     '''
     lists and converts supported file extensions to MIME type
@@ -280,7 +259,7 @@ class ReportClient(object):
         if kwargs:
             self.__dict__.update(kwargs)
         if config:
-            self.__dict__.update(getServerConfiguration(config))
+            self.__dict__.update(getTestConfiguration(config))
         self.token = None
         self.session_id = None
         self.created = False

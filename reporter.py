@@ -56,6 +56,26 @@ def _uniqueID():
     '''
     return str(uuid.uuid1())
 
+def _getTestConfiguration(config):
+    ret = {}
+    cf = ConfigParser()
+    cf.read(config)
+    ret.update({'username': cf.get('account', 'username'),\
+                'password': cf.get('account', 'password'),\
+                'auth': cf.get('server', 'auth'),\
+                'session_create': cf.get('server', 'session_create'),\
+                'session_update': cf.get('server', 'session_update'),\
+                'case_update': cf.get('server', 'case_update'),\
+                'file_upload': cf.get('server', 'file_upload'),\
+                'product': cf.get('device', 'product'),
+                'revision': cf.get('device', 'revision'),
+                'deviceid': cf.get('device', 'deviceid'),
+                'planname': cf.get('device', 'planname'),
+                'screen_width': cf.get('device', 'screen_width'),
+                'screen_height': cf.get('device', 'screen_height')               
+               })
+    return ret
+
 def _time():
     '''
     generic time stamp format
@@ -63,7 +83,7 @@ def _time():
     #return time.strftime(TIME_STAMP_FORMAT, time.localtime(time.time()))
     return str(datetime.datetime.now())
 
-def reporttime():
+def _reportTime():
     '''
     return time stamp format with REPORT_TIME_STAMP_FORMAT
     '''
@@ -167,6 +187,7 @@ class TestCaseContext(object):
         self.__screenshot_at_failure = None
         self.__log = None
         self.__expect = None
+        self.device_config = None
 
     @property
     def case_start_time(self):
@@ -406,6 +427,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         self.__counter = counter
         self.__timer = timer
         self.__log_handler = LogHandler(ANDROID_LOG_SHELL)
+        self.__configuration = None
 
     def options(self, parser, env):
         """ 
@@ -491,14 +513,17 @@ class ReporterPlugin(nose.plugins.Plugin):
         if self.opt.duration and not self.__timer:
             self.__timer = Timer(self.opt.duration)
 
+        if not self.__configuration:
+            if not exists(options.server_config):
+                raise Exception('exit due to unable to find server config file!')
+            self.__configuration = _getTestConfiguration(options.server_config)
+
         self.result_properties = {'payload': None, 'extras': None}
         #if disable report server
         if self.opt.reportserver and not self.__report_client:
             server_need = {'username':None, 'password':None, 'auth':None, 'session_create':None,
                            'session_update':None, 'case_create':None, 'case_update':None, 'file_upload':None}
-            if not exists(options.server_config):
-                raise Exception('exit due to unable to find server config file!')
-            self.__report_client =  ReportClient(config=options.server_config)
+            self.__report_client =  ReportClient(**self.__configuration)
             self.token = self.__report_client.regist()
             if not self.token:
                 raise Exception('exit due to unable to get token from server!')
@@ -532,7 +557,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         self.session_id = self.__counter.sid  
         self.test_start_time = getattr(self, 'test_start_time', None)
         if not self.test_start_time:
-            self.test_start_time = reporttime()
+            self.test_start_time = _reportTime()
         self.opt.directory = self.conf.workingDir
         self._report_path = _mkdir(join(join(self.opt.directory, 'report'), str(self.test_start_time).replace(' ', '_')))
         self._pass_report_path = _mkdir(join(self._report_path, 'pass'))
@@ -552,6 +577,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         module_name, class_name, method_name = test.id().split('.')[-3:]
         ctx = TestCaseContext(self._fail_report_path, self._error_report_path)
         ctx.case_dir_name = '%s%s%s' % (class_name, '.', method_name)
+        ctx.device_config = self.__configuration
         setattr(test.context, 'contexts', ctx)
 
     def __getTestCaseContext(self, test):
@@ -566,7 +592,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         """
         self.tid = self.__counter.next_tid()
         ctx = self.__getTestCaseContext(test)
-        ctx.case_start_time = reporttime()
+        ctx.case_start_time = _reportTime()
         ctx.user_log_dir = join(ctx.case_report_tmp_dir, 'logs')
         path = _mkdir(ctx.user_log_dir)
 
@@ -618,7 +644,7 @@ class ReporterPlugin(nose.plugins.Plugin):
 
     def addFailure(self, test, err, capt=None, tbinfo=None):
         ctx = self.__getTestCaseContext(test)
-        ctx.case_end_time = reporttime()
+        ctx.case_end_time = _reportTime()
         #payload data
         self.result_properties.update({'payload': {'tid': self.tid,
                                                   'casename': ctx.case_dir_name,
@@ -644,7 +670,7 @@ class ReporterPlugin(nose.plugins.Plugin):
     #remote upload
     def addError(self, test, err, capt=None):
         ctx = self.__getTestCaseContext(test)
-        ctx.case_end_time = reporttime()
+        ctx.case_end_time = _reportTime()
 
         self.result_properties.update({'payload': {'tid': self.tid,
                                                   'casename': ctx.case_dir_name,
@@ -671,7 +697,7 @@ class ReporterPlugin(nose.plugins.Plugin):
     #remote upload
     def addSuccess(self, test, capt=None):
         ctx = self.__getTestCaseContext(test)
-        ctx.case_end_time = reporttime()
+        ctx.case_end_time = _reportTime()
         self.result_properties.clear()
         self.result_properties.update({'payload': {'tid': self.tid,
                                                    'casename': ctx.case_dir_name,
@@ -711,10 +737,10 @@ class ReporterPlugin(nose.plugins.Plugin):
             self.__write('end cycle: %s \n' % (self.cid)) 
         session_properties = {'sid': self.session_id}
         if self.opt.icycle and not self.__counter.alive() and self.opt.reportserver:
-            session_properties.update({'endtime': reporttime()})
+            session_properties.update({'endtime': _reportTime()})
             self.__report_client.updateSession(**session_properties)
         if self.conf.stopOnError and self.opt.reportserver:
-            session_properties.update({'endtime': reporttime()})
+            session_properties.update({'endtime': _reportTime()})
             self.__report_client.updateSession(**session_properties)
             sys.exit(1)
         return None
