@@ -50,6 +50,7 @@ runner based on python nose testing framework
     def testMethod(self):
         ctx = self.contexts 
         user_log_dir_path = ctx.user_log_dir
+        device_id = ctx.device_config['deviceid']
         
     """
     function test case is able to get TestCaseContext obj during nose run time.
@@ -58,6 +59,7 @@ runner based on python nose testing framework
     def testMethod():
         ctx = contexts 
         user_log_dir_path = ctx.user_log_dir
+        ctx.device_config['deviceid']
         
     """
 
