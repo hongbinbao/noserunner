@@ -14,7 +14,7 @@ runner based on python nose testing framework
   
 ### Command-line
     usage:
-	python runtests.py [-h|--help] [--cycle CYCLE] [--reportserver]
+	python runtests.py [-h|--help] [--cycle CYCLE] [--reportserver] [,[argv]]
 
 
     Process the paramters of runtests
@@ -34,7 +34,7 @@ runner based on python nose testing framework
 	    --reportserver        Enable the report server feature. Default is disable
 
 	    --verbosity           Default is 2. set the level(1~5) of verbosity to get the help string of every test and the result
-	    
+	    argv                  Additional arguments accepted by nose
     e.g:
         python runtests.py --cycle 10                             #run test with 10 cycles
         python runtests.py --duration 2d                          #run test with 2 days      

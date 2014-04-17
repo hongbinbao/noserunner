@@ -1,3 +1,2 @@
-1: update session progress
-2: pass all userinput to nose
-3: add timeout for test case
+1: add timeout for test case
+2: add device.config file to support device configuration

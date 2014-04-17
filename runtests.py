@@ -7,12 +7,12 @@ from planloader import PlanLoaderPlugin
 from reporter import ReporterPlugin
 
 '''
-launcher of testing
+launcher of testing.
 '''
 
 def showUsage():
     print 'usage:'
-    print '\tpython runtests.py [-h|--help] [--cycle CYCLE] [--reportserver]\n\n'
+    print '\tpython runtests.py [-h|--help] [--cycle CYCLE] [--reportserver] [,[argv]]\n\n'
     print 'Process the paramters of runtests'
 
     print 'optional arguments:'
@@ -24,51 +24,47 @@ def showUsage():
     print                          '\t\t\t\t\te.g. --duration=2D09H30M12S, which means 2 days, 09 hours, 30 minutes and 12 seconds\n'
     print '\t--reportserver        Enable the report server feature. Default is disable\n'
     print '\t--verbosity           Set the level(1~5) of verbosity to get the help string of every test and the result. Default is 2\n'
+    print '\targv                  Additional arguments accepted by nose\n'
     exit(1)
 
+DEFAULT_VERBOSITY = '2'
 if __name__ == '__main__':
     if '-h' in sys.argv or '--help' in sys.argv: showUsage()
+
     cycle = None
-    argvs = ['','--with-plan-loader', '--with-reporter']
-    if '--duration' not in sys.argv and '--cycle' not in sys.argv:
-        print '\nmiss --duration or --cycle!\n'
-        showUsage()
-    if len(sys.argv) >= 2:
-        if '--verbosity' not in sys.argv:
-            argvs.append('--verbosity')
-            argvs.append('2')
-        else:
-            index = sys.argv.index('--verbosity')
-            verbosity = sys.argv[int(index)+1]
-            argvs.append('--verbosity')
-            argvs.append(verbosity)
+    arg_copy = sys.argv[:]
+    if len(arg_copy) >= 2:
+        if '--duration' not in arg_copy and '--cycle' not in arg_copy:
+            print '\nmiss --duration or --cycle!\n'
+            showUsage()
 
-        if '--cycle' in sys.argv:
-            index = sys.argv.index('--cycle')
-            cycle = int(sys.argv[int(index)+1])
-            argvs.append('--icycle')
-            argvs.append(str(cycle))            
+        prog_name = arg_copy.pop(0)
+        arg_copy.insert(0, '')
+        arg_copy.insert(1, '--with-plan-loader')
 
-        if '--plan' in sys.argv:
-            index = sys.argv.index('--plan')
-            plan = sys.argv[int(index)+1]
-            argvs.append('--plan')         
-            argvs.append(plan)
+        if '--cycle' in arg_copy:
+            index = arg_copy.index('--cycle')
+            cycle = int(arg_copy[index+1])
+            arg_copy[index] = '--icycle'
+
+        if '--verbosity' not in arg_copy:
+            arg_copy.append('--verbosity')
+            arg_copy.append(DEFAULT_VERBOSITY)
 
         if '--reportserver' in sys.argv:
-            argvs.append('--reportserver')
+            arg_copy.append('--with-reporter')
 
-        if '--duration' in sys.argv:
-            index = sys.argv.index('--duration')
-            duration = sys.argv[int(index)+1]
-            argvs.append('--duration')
-            argvs.append(duration)
-
-    planloader = PlanLoaderPlugin()
-    reporter = ReporterPlugin()
-    if not cycle:
-        while True:
-            nose.run(argv=argvs, addplugins=[planloader, reporter])
     else:
-        for i in range(cycle):
-            nose.run(argv=argvs, addplugins=[planloader, reporter])
+        showUsage()
+
+    try:
+        planloader = PlanLoaderPlugin()
+        reporter = ReporterPlugin()
+        if not cycle:
+            while True:
+                nose.run(argv=arg_copy, addplugins=[planloader, reporter])
+        else:
+            for i in range(cycle):
+                nose.run(argv=arg_copy, addplugins=[planloader, reporter])
+    except:
+        pass
