@@ -23,7 +23,7 @@ runner based on python nose testing framework
 
 	    --cycle CYCLE         Set the number(int) of cycle. Execute test with a specified number of cycle. Default is 1
 	    
-	    --plan PLAN           Set the absolute path or relative path of test plan file. Default is current directory
+	    --plan PLAN           Set the absolute path or relative path of test plan file. If not provide this option. The "plan" file in current directory will be used as default
 
 	    --duration DURATION   The minumum test duration before ending the test.
 					          Here format must follow next format: xxDxxHxxMxxS.
@@ -32,10 +32,10 @@ runner based on python nose testing framework
 	    --reportserver        Enable the report server feature. Default is disable
 	    
         --server-config       Specify the path of server configuration file.
-                              Default is server.config under current directory
+                              If not provide this option. The "server.config" file in current directory will be used as default
                               
         --device-config       Specify the path of device configuration file.
-                              Default is device.config under current directory
+                              If not provide this option. The "device.config" file in current directory will be used as default
                               
 	    --verbosity           Default is 2. set the level(1~5) of verbosity to get the help string of every test and the result
 	    
