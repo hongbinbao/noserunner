@@ -23,6 +23,8 @@ def showUsage():
     print                          '\t\t\t\t\tHere format must follow next format: xxDxxHxxMxxS\n'
     print                          '\t\t\t\t\te.g. --duration=2D09H30M12S, which means 2 days, 09 hours, 30 minutes and 12 seconds\n'
     print '\t--reportserver        Enable the report server feature. Default is disable\n'
+    print '\t--server-config       Specify the path of server configuration file.Default is server.config under current directory\n'
+    print '\t--device-config       Specify the path of device configuration file.Default is device.config under current directory\n'
     print '\t--verbosity           Set the level(1~5) of verbosity to get the help string of every test and the result. Default is 2\n'
     print '\targv                  Additional arguments accepted by nose\n'
     exit(1)
@@ -66,5 +68,5 @@ if __name__ == '__main__':
         else:
             for i in range(cycle):
                 nose.run(argv=arg_copy, addplugins=[planloader, reporter])
-    except:
+    except KeyboardInterrupt:
         pass

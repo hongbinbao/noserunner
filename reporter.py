@@ -76,6 +76,33 @@ def _getTestConfiguration(config):
                })
     return ret
 
+def _getServerConfiguration(config):
+    ret = {}
+    cf = ConfigParser()
+    cf.read(config)
+    ret.update({'username': cf.get('account', 'username'),\
+                'password': cf.get('account', 'password'),\
+                'auth': cf.get('server', 'auth'),\
+                'session_create': cf.get('server', 'session_create'),\
+                'session_update': cf.get('server', 'session_update'),\
+                'case_update': cf.get('server', 'case_update'),\
+                'file_upload': cf.get('server', 'file_upload')              
+               })
+    return ret
+
+def _getDeviceConfiguration(config):
+    ret = {}
+    cf = ConfigParser()
+    cf.read(config)
+    ret.update({'product': cf.get('device', 'product'),
+                'revision': cf.get('device', 'revision'),
+                'deviceid': cf.get('device', 'deviceid'),
+                'planname': cf.get('device', 'planname'),
+                'screen_width': cf.get('device', 'screen_width'),
+                'screen_height': cf.get('device', 'screen_height')                   
+               })
+    return ret
+
 def _time():
     '''
     generic time stamp format
@@ -427,7 +454,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         self.__counter = counter
         self.__timer = timer
         self.__log_handler = LogHandler(ANDROID_LOG_SHELL)
-        self.__configuration = None
+        self.__configuration = {}
 
     def options(self, parser, env):
         """ 
@@ -456,6 +483,10 @@ class ReporterPlugin(nose.plugins.Plugin):
         parser.add_option('--server-config', action='store',  metavar="FILE",
                           dest='server_config', default='server.config',
                           help="specify the server config file path")
+
+        parser.add_option('--device-config', action='store',  metavar="FILE",
+                          dest='device_config', default='device.config',
+                          help="specify the device config file path")
 
         parser.add_option('--duration', dest='duration', type='string',metavar="STRING",
                           action='callback', callback=self.__validate_duration, 
@@ -515,8 +546,11 @@ class ReporterPlugin(nose.plugins.Plugin):
 
         if not self.__configuration:
             if not exists(options.server_config):
-                raise Exception('exit due to unable to find server config file!')
-            self.__configuration = _getTestConfiguration(options.server_config)
+                raise Exception('exit due to unable to find server configuration file: "%s"' % options.server_config)
+            if not exists(options.device_config):
+                raise Exception('exit due to unable to find device configuration file: "%s"' % options.device_config)
+            self.__configuration.update(_getServerConfiguration(options.server_config))
+            self.__configuration.update(_getDeviceConfiguration(options.device_config))
 
         self.result_properties = {'payload': None, 'extras': None}
         #if disable report server

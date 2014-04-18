@@ -32,7 +32,10 @@ runner based on python nose testing framework
 					          e.g. --duration=2D09H30M12S, which means 2 days, 09 hours, 30 minutes and 12 seconds
 
 	    --reportserver        Enable the report server feature. Default is disable
-
+        --server-config       Specify the path of server configuration file.
+                              Default is server.config under current directory
+        --device-config       Specify the path of device configuration file.
+                              Default is device.config under current directory
 	    --verbosity           Default is 2. set the level(1~5) of verbosity to get the help string of every test and the result
 	    argv                  Additional arguments accepted by nose
     e.g:
