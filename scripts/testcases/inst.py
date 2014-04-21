@@ -47,10 +47,17 @@ class Caculator(unittest.TestCase):
         super(Caculator, self).tearDown()
 
     def testAsAttributeSet(self):
+        """
+        Samary:testAsAttributeSet
+        Step1:
+        """
         output = instrument(inst_params1)
         assert output['stream'].find('OK') != -1, ret
 
     def testFindEncodingByName(self):
+        """
+        Samary:testFindEncodingByName
+        """
         #yield instrument, inst_params
         output = instrument(inst_params2)
         assert output['stream'].find('OK') != -1, ret
