@@ -80,6 +80,7 @@ runner based on python nose testing framework
     ├── client.py                                       #nose plugin module
     ├── planloader.py                                   #nose plugin module
     ├── reporter.py                                     #nose plugin module
+    ├── makelog.py                                      #make an entire log file based on report folder
     ├── runtests.py                                     #launch script
     ├── scripts                                         #test case package
     │   ├── __init__.py
