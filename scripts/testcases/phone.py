@@ -13,6 +13,10 @@ class Phone(unittest.TestCase):
 
     
     def testCall(self):
+        """
+        Samary:testCall
+        Step1:male a call from phone book
+        """
         import time
         #d.sleep(9)
         assert 0, 'phone failure'

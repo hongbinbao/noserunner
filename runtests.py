@@ -5,6 +5,7 @@ import sys
 import nose
 from planloader import PlanLoaderPlugin
 from reporter import ReporterPlugin
+from xmlreportplugin import XmlReporterPlugin
 
 '''
 launcher of testing.
@@ -62,11 +63,12 @@ if __name__ == '__main__':
     try:
         planloader = PlanLoaderPlugin()
         reporter = ReporterPlugin()
+        xmlreportplugin = XmlReporterPlugin()
         if not cycle:
             while True:
-                nose.run(argv=arg_copy, addplugins=[planloader, reporter])
+                nose.run(argv=arg_copy, addplugins=[planloader, reporter, xmlreportplugin])
         else:
             for i in range(cycle):
-                nose.run(argv=arg_copy, addplugins=[planloader, reporter])
+                nose.run(argv=arg_copy, addplugins=[planloader, reporter, xmlreportplugin])
     except KeyboardInterrupt:
         pass

@@ -13,6 +13,11 @@ inst_params = {'class': 'android.util.cts.XmlTest',
 local_cmd = 'adb shell am instrument -w -r -e class %s#%s %s'
 
 def instrument(params):
+        """
+        Samary:instrument
+        Step1:
+        Step2:
+        """
     cmd = local_cmd % (params['class'], params['method'], params['componment'])
     ret = call(cmd)
     if ret.find('OK') == -1:
@@ -22,6 +27,9 @@ def instrument(params):
 
 
 def testGen():
+        """
+        Samary:test gen
+        """
     yield instrument, inst_params
 
 inst_params2 = {'class': 'android.util.cts.XmlTest',

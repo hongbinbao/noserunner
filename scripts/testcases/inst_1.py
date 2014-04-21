@@ -54,9 +54,15 @@ class Caculator(unittest.TestCase):
         #adb [-k] uninstall <package name>
 
     def testCaculatorA(self):
+        """
+        Samary:testCaculatorA
+        """
         output = instrument('testAsAttributeSet', self.inst_class, self._componment)
         assert output['stream'].find('OK') != -1, ret
 
     def testCaculatorB(self):
+        """
+        Samary:testCaculatorB
+        """
         output = instrument('testFindEncodingByName', self.inst_class, self._componment)
         assert output['stream'].find('OK') != -1, ret

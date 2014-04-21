@@ -21,6 +21,11 @@ class Browser(unittest.TestCase):
         d.press('home')
 
     def testOpenBrowser(self):
+        """
+        Samary:Open browser
+        Step1:
+        Step2:
+        """
         assert True, 'manual success'
         #assert d.exists(text='Browser') , 'Browser app not appear on the home screen'
         #assert 0, 'main failure'
