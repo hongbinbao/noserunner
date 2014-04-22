@@ -40,13 +40,26 @@ runner based on python nose testing framework
 	    --verbosity           Default is 2. set the level(1~5) of verbosity to get the help string of every test and the result
 	    
 	    argv                  Additional arguments accepted by nose
+	    
     e.g:
-        python runtests.py --cycle 10                             #run test with 10 cycles
-        python runtests.py --duration 2d                          #run test with 2 days      
-        python runtests.py --cycle 2 --duration 4h                #run test with 10 cycles and expect to finish within 4 hours
-        python runtests.py --cycle 10 --plan path_of_my_plan_file #specify the location of test plan file
-        python runtests.py --cycle 10 --reportserver              #enable to upload result to report server
-  
+        run test with 10 cycles:
+        $ python runtests.py --cycle 10
+        
+        run test with 2 days:
+        $ python runtests.py --duration 2d
+        
+        run test with 10 cycles and expect to finish within 4 hours:
+        $ python runtests.py --cycle 2 --duration 4h
+        
+        specify the location of test plan file:
+        $ python runtests.py --cycle 10 --plan-file path_of_plan_file
+        
+        upload result to report server:
+        $ python runtests.py --cycle 10 --reportserver
+        
+        specify the config file location of server and device: 
+        $ python runtests.py --plan-file plan --cycle 10 --device-config device.config --server-config server.config --reportserver
+        
 ### TestCaseContext instance provided by nose plugin
 
     test case extends from unittest.TestCase is able to get TestCaseContext obj during nose run time.
