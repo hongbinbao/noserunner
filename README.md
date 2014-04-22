@@ -14,7 +14,7 @@ runner based on python nose testing framework
   
 ### Command-line
     usage:
-	python runtests.py [-h|--help] [--cycle CYCLE] [--reportserver] [,[argv]]
+	python runtests.py [-h|--help] [--cycle CYCLE] [--plan-file PLAN] [--reportserver] [,[argv]]
 
 
     Process the paramters of runtests
@@ -23,7 +23,7 @@ runner based on python nose testing framework
 
 	    --cycle CYCLE         Set the number(int) of cycle. Execute test with a specified number of cycle. Default is 1
 	    
-	    --plan PLAN           Set the absolute path or relative path of test plan file. If not provide this option. The "plan" file in current directory will be used as default
+	    --plan-file PLAN      Set the absolute path or relative path of test plan file. If not provide this option. The "plan" file in current directory will be used as default
 
 	    --duration DURATION   The minumum test duration before ending the test.
 					          Here format must follow next format: xxDxxHxxMxxS.

@@ -25,11 +25,11 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
         """Register commandline options.
         """
         super(PlanLoaderPlugin, self).options(parser, env)
-        parser.add_option('--plan-file', action='store', type='string',metavar="STRING",
+        parser.add_option('--plan-file', action='store', type='string', metavar="STRING",
                           dest='plan_file', default='plan',
-                          help="Run the tests that list in plan file")
+                          help="Run the tests specified by the plan file")
 
-        parser.add_option('--loop', action='store', type='string',metavar="STRING",
+        parser.add_option('--loop', action='store', type='string', metavar="STRING",
                           dest='loops', default='1',
                           help="Run the tests with specified loop number. default will execute forever ")
 
@@ -38,11 +38,7 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
         """Configure plugin.
         """
         super(PlanLoaderPlugin, self).configure(options, conf)
-        if not self.enabled:
-            return
-        #print options
-        #if options.stability_test_loader:
-        #    self.enabled = True
+        if not self.enabled: return
         self.conf = conf
         if options.plan_file:
             self.enabled = True

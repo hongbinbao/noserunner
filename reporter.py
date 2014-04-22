@@ -56,25 +56,6 @@ def _uniqueID():
     '''
     return str(uuid.uuid1())
 
-def _getTestConfiguration(config):
-    ret = {}
-    cf = ConfigParser()
-    cf.read(config)
-    ret.update({'username': cf.get('account', 'username'),\
-                'password': cf.get('account', 'password'),\
-                'auth': cf.get('server', 'auth'),\
-                'session_create': cf.get('server', 'session_create'),\
-                'session_update': cf.get('server', 'session_update'),\
-                'case_update': cf.get('server', 'case_update'),\
-                'file_upload': cf.get('server', 'file_upload'),\
-                'product': cf.get('device', 'product'),
-                'revision': cf.get('device', 'revision'),
-                'deviceid': cf.get('device', 'deviceid'),
-                'planname': cf.get('device', 'planname'),
-                'screen_width': cf.get('device', 'screen_width'),
-                'screen_height': cf.get('device', 'screen_height')               
-               })
-    return ret
 
 def _getServerConfiguration(config):
     ret = {}
@@ -97,7 +78,6 @@ def _getDeviceConfiguration(config):
     ret.update({'product': cf.get('device', 'product'),
                 'revision': cf.get('device', 'revision'),
                 'deviceid': cf.get('device', 'deviceid'),
-                'planname': cf.get('device', 'planname'),
                 'screen_width': cf.get('device', 'screen_width'),
                 'screen_height': cf.get('device', 'screen_height')                   
                })
@@ -535,7 +515,6 @@ class ReporterPlugin(nose.plugins.Plugin):
         self.write_hashes = conf.verbosity == 2
         self.conf = conf
         self.opt = options
-
         if self.opt.icycle and not self.__counter:
             self.__counter = TestCounter(cycles=self.opt.icycle)
         elif not self.__counter:
@@ -551,6 +530,7 @@ class ReporterPlugin(nose.plugins.Plugin):
                 raise Exception('exit due to unable to find device configuration file: "%s"' % options.device_config)
             self.__configuration.update(_getServerConfiguration(options.server_config))
             self.__configuration.update(_getDeviceConfiguration(options.device_config))
+            self.__configuration.update({'planname': os.path.basename(self.conf.options.plan_file)})
 
         self.result_properties = {'payload': None, 'extras': None}
         #if disable report server

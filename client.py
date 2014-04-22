@@ -258,8 +258,6 @@ class ReportClient(object):
         '''
         if kwargs:
             self.__dict__.update(kwargs)
-        if config:
-            self.__dict__.update(getTestConfiguration(config))
         self.token = None
         self.session_id = None
         self.created = False
