@@ -30,6 +30,9 @@ from client import ReportClient
 log = logging.getLogger(__name__)
 '''global log instance'''
 
+LOCATION_NOT_FOUND_EXCEPTION = '%s not found.'
+'''error msg if adb not found'''
+
 TAG='%s%s%s' % ('-' * 18, 'file output save Plugin', '-' * 18)
 '''global log output tag'''
 
@@ -47,7 +50,7 @@ FAILURE_SNAPSHOT_NAME = 'failure.png'
 
 REPORT_TIME_STAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
 
-ANDROID_LOG_SHELL = 'adb %s %s logcat -v time'
+ANDROID_LOG_SHELL = '%s %s %s logcat -v time'
 '''android log shell command line'''
 
 def _uniqueID():
@@ -118,6 +121,73 @@ def _formatOutput(name, etype, err):
     exception_text = traceback.format_exception(*err)
     #exception_text = "".join(exception_text).replace(os.linesep, '')
     return exception_text
+
+def _zipFolder(folder_name, file_name, includeEmptyDIr=False):
+    '''
+    create a zip file for folder
+    '''
+    empty_dirs = []
+    try:  
+        ziper = zipfile.ZipFile(file_name, 'w', zipfile.ZIP_DEFLATED)  
+        for root, dirs, files in os.walk(folder_name):
+            empty_dirs.extend([d for d in dirs if os.listdir(os.path.join(root, d)) == []])  
+            for name in files:
+                ziper.write(os.path.join(root ,name), name)
+                #fix same name error
+                #full zip with parent dir
+                #ziper.write(os.path.join(root ,name), os.path.join(os.path.splitext(filename)[0],name))
+            if includeEmptyDIr:  
+                for d in empty_dirs:  
+                    zif = zipfile.ZipInfo(os.path.join(root, d) + "/")  
+                    ziper.writestr(zif, "")
+            empty_dirs = []
+        return True
+    except:
+        return False
+    finally:
+        if ziper != None:
+            ziper.close()
+
+def _isExecutable(exe):
+    '''
+    return True if program is executable.
+    '''
+    return os.path.isfile(exe) and os.access(exe, os.X_OK)
+
+def _findExetuable(program):
+    '''
+    return the absolute path of executable program if the program available.
+    else raise Exception.
+    '''
+    program_path, program_name = os.path.split(program)
+    if program_path:
+        if _isExecutable(program):
+            return program
+    else:
+        for path in os.environ['PATH'].split(os.pathsep):
+            path = path.strip('"')
+            exe_file = os.path.join(path, program)
+            if _isExecutable(exe_file):
+                return exe_file
+    raise Exception(LOCATION_NOT_FOUND_EXCEPTION % program)
+
+def _makeLog(path, bridge='adb', serial=None, result='failure'):
+    '''
+    pull log/snapshot from device to local report folder
+    '''
+    path = _mkdir(path)
+    exe  = _findExetuable(bridge)
+    snapshot_name = '%s%s%s' % (result, '.', 'png')
+    #serial = os.environ['ANDROID_SERIAL'] if os.environ.has_key('ANDROID_SERIAL') else None
+    
+    #snapshot & system log
+    if serial:
+        shell('%s -s %s shell screencap /sdcard/%s' % (exe, serial, snapshot_name))
+        shell('%s -s %s pull /sdcard/%s %s' % (exe, serial, snapshot_name, path))
+    else:
+        shell('%s shell screencap /sdcard/%s' % (exe, snapshot_name))
+        shell('%s pull /sdcard/%s %s' % (exe, snapshot_name, path))
+    _zipFolder(join(dirname(path), 'logs'), join(dirname(path), 'log.zip'))
 
 class TestCounter(object):
     '''
@@ -274,66 +344,6 @@ class TestCaseContext(object):
     def expect(self):
         return self.__expect
 
-def _zipFolder(folder_name, file_name, includeEmptyDIr=False):
-    '''
-    create a zip file for folder
-    '''
-    empty_dirs = []
-    try:  
-        ziper = zipfile.ZipFile(file_name, 'w', zipfile.ZIP_DEFLATED)  
-        for root, dirs, files in os.walk(folder_name):
-            empty_dirs.extend([d for d in dirs if os.listdir(os.path.join(root, d)) == []])  
-            for name in files:
-                ziper.write(os.path.join(root ,name), name)
-                #fix same name error
-                #full zip with parent dir
-                #ziper.write(os.path.join(root ,name), os.path.join(os.path.splitext(filename)[0],name))
-            if includeEmptyDIr:  
-                for d in empty_dirs:  
-                    zif = zipfile.ZipInfo(os.path.join(root, d) + "/")  
-                    ziper.writestr(zif, "")
-            empty_dirs = []
-        return True
-    except:
-        return False
-    finally:
-        if ziper != None:
-            ziper.close()
-
-def _grabLog(path):
-    '''
-    pull log/snapshot from device to local report folder
-    '''
-    path = _mkdir(path)
-    serial = os.environ['ANDROID_SERIAL'] if os.environ.has_key('ANDROID_SERIAL') else None
-    #snapshot & system log
-    if serial:
-        shell('adb -s %s shell screencap /sdcard/%s' % (serial, FAILURE_SNAPSHOT_NAME))
-        shell('adb -s %s pull /sdcard/%s %s' % (serial, FAILURE_SNAPSHOT_NAME, path))
-        shell('adb -s %s logcat -v time -d > %s ' % (serial, join(path, LOG_FILE_NAME)))
-    else:
-        shell('adb shell screencap /sdcard/%s' % FAILURE_SNAPSHOT_NAME)
-        shell('adb pull /sdcard/%s %s' % (FAILURE_SNAPSHOT_NAME, path))
-        shell('adb logcat -v time -d > %s ' % join(path, LOG_FILE_NAME))
-    _zipFolder(join(dirname(path), 'logs'), join(dirname(path), 'log.zip'))
-
-def _makeLog(path, result='failure'):
-    '''
-    pull log/snapshot from device to local report folder
-    '''
-    path = _mkdir(path)
-    snapshot_name = '%s%s%s' % (result, '.', 'png')
-    serial = os.environ['ANDROID_SERIAL'] if os.environ.has_key('ANDROID_SERIAL') else None
-    #snapshot & system log
-    if serial:
-        shell('adb -s %s shell screencap /sdcard/%s' % (serial, snapshot_name))
-        shell('adb -s %s pull /sdcard/%s %s' % (serial, snapshot_name, path))
-    else:
-        shell('adb shell screencap /sdcard/%s' % snapshot_name)
-        shell('adb pull /sdcard/%s %s' % (snapshot_name, path))
-    _zipFolder(join(dirname(path), 'logs'), join(dirname(path), 'log.zip'))
-
-
 class Timer(object):
     def __init__(self, duration):
         self.__starttime = datetime.datetime.now()
@@ -354,19 +364,21 @@ class Timer(object):
         #return '%0.02f' % (float((datetime.datetime.now() - self.__starttime).total_seconds())/(self.__duration.total_seconds()))
 
 class LogHandler(object):
-    def __init__(self, cmd):
-        self.__cmd = cmd
+    def __init__(self, bridge='adb', serial=None):
+        self.__bridge = bridge
+        self.__serial = serial
         self.__cache_queue = Queue.Queue()
         self.__logger_proc = None
         self.__cache_thread = None
         
     def start(self):
         cmd = None
-        serial = os.environ['ANDROID_SERIAL'] if os.environ.has_key('ANDROID_SERIAL') else None
-        if serial:
-            cmd = ANDROID_LOG_SHELL % ('-s', serial)
+        exe = _findExetuable(self.__bridge)
+        #serial = os.environ['ANDROID_SERIAL'] if os.environ.has_key('ANDROID_SERIAL') else None
+        if self.__serial:
+            cmd = ANDROID_LOG_SHELL % (exe, '-s', self.__serial)
         else:
-            cmd = ANDROID_LOG_SHELL % ('', '')
+            cmd = ANDROID_LOG_SHELL % (exe, '', '')
         self.__logger_proc = subprocess.Popen(shlex.split(cmd),\
                                               stdout=subprocess.PIPE,\
                                               close_fds=True,\
@@ -433,7 +445,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         self.__report_client = report_client if report_client else None
         self.__counter = counter
         self.__timer = timer
-        self.__log_handler = LogHandler(ANDROID_LOG_SHELL)
+        self.__log_handler = None
         self.__configuration = {}
 
     def options(self, parser, env):
@@ -524,8 +536,9 @@ class ReporterPlugin(nose.plugins.Plugin):
             self.__timer = Timer(self.opt.duration)
 
         if not self.__configuration:
-            if not exists(options.server_config):
-                raise Exception('exit due to unable to find server configuration file: "%s"' % options.server_config)
+            if self.opt.reportserver:
+                if not exists(options.server_config):
+                    raise Exception('exit due to unable to find server configuration file: "%s"' % options.server_config)
             if not exists(options.device_config):
                 raise Exception('exit due to unable to find device configuration file: "%s"' % options.device_config)
             self.__configuration.update(_getServerConfiguration(options.server_config))
@@ -564,6 +577,8 @@ class ReporterPlugin(nose.plugins.Plugin):
         '''
         enable log handler.
         '''
+        if not self.__log_handler:
+            self.__log_handler = LogHandler(serial=self.__configuration['deviceid'])
         if not self.__log_handler.available():
             self.__log_handler.start()
 
@@ -671,7 +686,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         trace_log_path = join(ctx.user_log_dir, 'trace.txt')
         with open(trace_log_path, 'w+') as f:
             f.write(str(self.result_properties['payload']['trace']))
-        _makeLog(ctx.user_log_dir)
+        _makeLog(path=ctx.user_log_dir, serial=self.__configuration['deviceid'])
         try:
             shutil.move(ctx.case_report_tmp_dir, self._fail_report_path)
         except:
@@ -697,7 +712,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         trace_log_path = join(ctx.user_log_dir, 'trace.txt')
         with open(trace_log_path, 'w+') as f:
             f.write(str(self.result_properties['payload']['trace']))
-        _makeLog(ctx.user_log_dir)
+        _makeLog(path=ctx.user_log_dir, serial=self.__configuration['deviceid'])
         try:
             shutil.move(ctx.case_report_tmp_dir, self._error_report_path)
         except:
@@ -726,7 +741,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         trace_log_path = join(ctx.user_log_dir, 'trace.txt')
         with open(trace_log_path, 'w+') as f:
             f.write(str(self.result_properties['payload']['result']))
-        _makeLog(ctx.user_log_dir, 'pass')
+        _makeLog(path=ctx.user_log_dir, serial=self.__configuration['deviceid'], result='pass')
         try:
             shutil.move(ctx.case_report_tmp_dir, self._pass_report_path)
         except:
