@@ -14,7 +14,7 @@ runner based on python nose testing framework
   
 ### Command-line
     usage:
-	python runtests.py [-h|--help] [--cycle CYCLE] [--plan-file PLAN] [--reportserver] [,[argv]]
+	python runtests.py [-h|--help] [--cycle CYCLE] [--duration DURATION_TIME] [--plan-file PLAN_FILE] [--livereport] [--livereport-config LIVE_REPORT_CONFIG] [--device-config DEVICE_CONFIG] [--verbosity VERBOSITY] [,[argv]]
 
 
     Process the paramters of runtests
@@ -25,14 +25,14 @@ runner based on python nose testing framework
 	    
 	    --plan-file PLAN      Set the absolute path or relative path of test plan file. If not provide this option. The "plan" file in current directory will be used as default
 
-	    --duration DURATION   The minumum test duration before ending the test.
+	    --duration DURATION   The maxumum test duration before ending the test.
 					          Here format must follow next format: xxDxxHxxMxxS.
 					          e.g. --duration=2D09H30M12S, which means 2 days, 09 hours, 30 minutes and 12 seconds
 
-	    --reportserver        Enable the report server feature. Default is disable
+	    --livereport          Enable the live report server feature. Default is disable
 	    
-        --server-config       Specify the path of server configuration file.
-                              If not provide this option. The "server.config" file in current directory will be used as default
+        --livereport-config       Specify the path of the lieve report server configuration file.
+                              If not provide this option. The "livereport.config" file in current directory will be used as default
                               
         --device-config       Specify the path of device configuration file.
                               If not provide this option. The "device.config" file in current directory will be used as default
@@ -55,10 +55,10 @@ runner based on python nose testing framework
         $ python runtests.py --cycle 10 --plan-file path_of_plan_file
         
         upload result to report server:
-        $ python runtests.py --cycle 10 --reportserver
+        $ python runtests.py --cycle 10 --livereport
         
-        specify the config file location of server and device: 
-        $ python runtests.py --plan-file plan --cycle 10 --device-config device.config --server-config server.config --reportserver
+        specify the config file location of the live report server and device: 
+        $ python runtests.py --plan-file plan --cycle 10 --device-config device.config --livereport-config livereport.config --livereport
         
 ### TestCaseContext instance provided by nose plugin
 

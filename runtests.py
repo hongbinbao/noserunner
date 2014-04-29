@@ -13,18 +13,18 @@ launcher of testing.
 
 def showUsage():
     print 'usage:'
-    print '\tpython runtests.py [-h|--help] [--cycle CYCLE] [--reportserver] [,[argv]]\n\n'
+    print '\tpython runtests.py [-h|--help] [--cycle CYCLE] [--livereport] [--livereport-config REPORT_CONFIG] [--device-config DEVICE_CONFIG] [,[argv]]\n\n'
     print 'Process the paramters of runtests'
 
     print 'optional arguments:'
     print '\t-h, --help            Show this help message and exit\n'
     print '\t--cycle CYCLE         Set the number(int) of cycle. Execute test with a specified number of cycle. Default is 1\n'
-    print '\t--plan PLAN           Set the absolute path or relative path of test plan file. If not provide this option. The "plan" file in current directory will be used as default\n'
+    print '\t--plan-file PLAN      Set the absolute path or relative path of test plan file. If not provide this option. The "plan" file in current directory will be used as default\n'
     print '\t--duration DURATION   The minumum test duration before ending the test\n'
     print                          '\t\t\t\t\tHere format must follow next format: xxDxxHxxMxxS\n'
     print                          '\t\t\t\t\te.g. --duration=2D09H30M12S, which means 2 days, 09 hours, 30 minutes and 12 seconds\n'
-    print '\t--reportserver        Enable the report server feature. Default is disable\n'
-    print '\t--server-config       Specify the path of server configuration file. If not provide this option. The "server.config" file in current directory will be used as default\n'
+    print '\t--livereport          Enable the report server feature. Default is disable\n'
+    print '\t--livereport-config   Specify the path of live report server configuration file. If not provide this option. The "server.config" file in current directory will be used as default\n'
     print '\t--device-config       Specify the path of device configuration file. If not provide this option. The "device.config" file in current directory will be used as default\n'
     print '\t--verbosity           Set the level(1~5) of verbosity to get the help string of every test and the result. Default is 2\n'
     print '\targv                  Additional arguments accepted by nose\n'
@@ -54,8 +54,8 @@ if __name__ == '__main__':
             arg_copy.append('--verbosity')
             arg_copy.append(DEFAULT_VERBOSITY)
 
-        if '--reportserver' in sys.argv:
-            arg_copy.append('--with-reporter')
+        if '--livereport' in sys.argv:
+            arg_copy.append('--with-live-reporter')
 
     else:
         showUsage()

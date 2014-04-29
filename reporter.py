@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 LOCATION_NOT_FOUND_EXCEPTION = '%s not found.'
 '''error msg if adb not found'''
 
-TAG='%s%s%s' % ('-' * 18, 'file output save Plugin', '-' * 18)
+TAG='%s%s%s' % ('-' * 18, 'live report plugin', '-' * 18)
 '''global log output tag'''
 
 TIME_STAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
@@ -435,9 +435,9 @@ class LogCacheWrapper(threading.Thread):
 
 class ReporterPlugin(nose.plugins.Plugin):
     """
-    handle test output.
+    output test result local and report to server.
     """
-    name = 'reporter'
+    name = 'live-reporter'
     #score = 200
 
     def __init__(self, counter=None, report_client=None, timer=None):
@@ -468,13 +468,13 @@ class ReporterPlugin(nose.plugins.Plugin):
                           dest='icycle', default=None, help="total cycle flag")
 
         ###report server config###
-        parser.add_option('--reportserver', action='store_true',
-                          dest='reportserver', default=False,
-                          help="switcher of uploading result to server. default is enable the feature")
+        parser.add_option('--livereport', action='store_true',
+                          dest='livereport', default=False,
+                          help="switcher of uploading result to live report server. default is enable the feature")
 
-        parser.add_option('--server-config', action='store',  metavar="FILE",
-                          dest='server_config', default='server.config',
-                          help="specify the server config file path")
+        parser.add_option('--livereport-config', action='store',  metavar="FILE",
+                          dest='livereport_config', default='livereport.config',
+                          help="specify the live report server configuration file path")
 
         parser.add_option('--device-config', action='store',  metavar="FILE",
                           dest='device_config', default='device.config',
@@ -536,18 +536,18 @@ class ReporterPlugin(nose.plugins.Plugin):
             self.__timer = Timer(self.opt.duration)
 
         if not self.__configuration:
-            if self.opt.reportserver:
-                if not exists(options.server_config):
-                    raise Exception('exit due to unable to find server configuration file: "%s"' % options.server_config)
+            if self.opt.livereport:
+                if not exists(options.livereport_config):
+                    raise Exception('exit due to unable to find server configuration file: "%s"' % options.livereport_config)
             if not exists(options.device_config):
                 raise Exception('exit due to unable to find device configuration file: "%s"' % options.device_config)
-            self.__configuration.update(_getServerConfiguration(options.server_config))
+            self.__configuration.update(_getServerConfiguration(options.livereport_config))
             self.__configuration.update(_getDeviceConfiguration(options.device_config))
             self.__configuration.update({'planname': os.path.basename(self.conf.options.plan_file)})
 
         self.result_properties = {'payload': None, 'extras': None}
         #if disable report server
-        if self.opt.reportserver and not self.__report_client:
+        if self.opt.livereport and not self.__report_client:
             server_need = {'username':None, 'password':None, 'auth':None, 'session_create':None,
                            'session_update':None, 'case_create':None, 'case_update':None, 'file_upload':None}
             self.__report_client =  ReportClient(**self.__configuration)
@@ -599,7 +599,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         self.cid = self.__counter.next_cid()
         if self.write_hashes:
             sys.stderr.write('begin cycle: %s \n' % (self.cid))                          
-        if self.opt.reportserver and not self.__report_client.created:
+        if self.opt.livereport and not self.__report_client.created:
             self.__report_client.createSession(**session_properties)
 
     def __setTestCaseContext(self, test):
@@ -693,7 +693,7 @@ class ReporterPlugin(nose.plugins.Plugin):
             pass
         if self.__timer and not self.__timer.alive():
             self.conf.stopOnError = True
-        if self.opt.reportserver:
+        if self.opt.livereport:
             self.__report_client.updateTestCase(**self.result_properties)
 
     #remote upload
@@ -720,7 +720,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         if self.__timer and not self.__timer.alive():
             self.conf.stopOnError = True
 
-        if self.opt.reportserver:
+        if self.opt.livereport:
             self.__report_client.updateTestCase(**self.result_properties)
 
     #remote upload
@@ -748,7 +748,7 @@ class ReporterPlugin(nose.plugins.Plugin):
             pass
         if self.__timer and not self.__timer.alive():
             self.conf.stopOnError = True
-        if self.opt.reportserver:
+        if self.opt.livereport:
             self.__report_client.updateTestCase(**self.result_properties)
 
     def report(self, stream):
@@ -757,7 +757,7 @@ class ReporterPlugin(nose.plugins.Plugin):
             session_properties.update({'status': self.__timer.progress()})
         elif self.opt.icycle and self.__counter:
             session_properties.update({'status': self.__counter.progress()})
-        if self.opt.reportserver:
+        if self.opt.livereport:
             self.__report_client.updateSession(**session_properties)                            
         return None
 
@@ -765,10 +765,10 @@ class ReporterPlugin(nose.plugins.Plugin):
         if self.write_hashes:
             self.__write('end cycle: %s \n' % (self.cid)) 
         session_properties = {'sid': self.session_id}
-        if self.opt.icycle and not self.__counter.alive() and self.opt.reportserver:
+        if self.opt.icycle and not self.__counter.alive() and self.opt.livereport:
             session_properties.update({'endtime': _reportTime()})
             self.__report_client.updateSession(**session_properties)
-        if self.conf.stopOnError and self.opt.reportserver:
+        if self.conf.stopOnError and self.opt.livereport:
             session_properties.update({'endtime': _reportTime()})
             self.__report_client.updateSession(**session_properties)
             sys.exit(1)

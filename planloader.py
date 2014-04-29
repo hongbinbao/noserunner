@@ -3,13 +3,71 @@
 
 import os
 import sys
+import nose
 import logging
 import unittest
 import ConfigParser
+from functools import wraps
+from multiprocessing import Process
 from collections import  OrderedDict
-import nose
 from nose.suite import *
+from Queue import Queue, Empty
+import threading
+
+"""
+module for loading test suite from config file and injecting timeout check in case method level.
+"""
+
 log = logging.getLogger(__name__)
+
+
+def timeout(timeout=180):
+    """
+    decorator for tiemout
+    """
+    def func_wrapper(func):
+        def arguments_wrapper(*args, **kwargs):
+            q = Queue()
+            _ = CaseThread(q, func, *args, **kwargs)
+            _.start()
+            try:
+                error = q.get(timeout=timeout)
+            except Empty:
+                raise TimeoutException("timeout expired before end of test (%f s.)" % timeout)
+            if error is not None:
+                exc_type, exc_value, tb = error
+                raise exc_type, exc_value, tb
+        return wraps(func)(arguments_wrapper)
+    return func_wrapper
+
+class TimeoutException(AssertionError):
+    """
+    timeout exception
+    """
+    def __init__(self, value = 'Test Case Time Out'):
+        self.value = value
+
+    def __str__(self):
+       return repr(self.value)
+
+class CaseThread(threading.Thread):
+    """
+    thread used to run test method
+    """
+    def __init__(self, q=None , func=None, args=(), kwargs={}):
+        threading.Thread.__init__(self)
+        self.daemon = True
+        self.__q = q
+        self.__func = func
+        self.__args = args
+        self.__kwargs = kwargs
+
+    def run(self):
+        try:
+            self.__func(*self.__args, **self.__kwargs)
+            self.__q.put(None)
+        except:
+            self.__q.put(sys.exc_info())
 
 class PlanLoaderPlugin(nose.plugins.Plugin):
     """
@@ -33,15 +91,13 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
                           dest='loops', default='1',
                           help="Run the tests with specified loop number. default will execute forever ")
 
-
     def configure(self, options, conf):
         """Configure plugin.
         """
         super(PlanLoaderPlugin, self).configure(options, conf)
         if not self.enabled: return
         self.conf = conf
-        if options.plan_file:
-            self.enabled = True
+        if options.plan_file: self.enabled = True
         if options.loops:
             self.enabled = True
             self.loops = options.loops
@@ -85,6 +141,8 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
 
 
     def loadTestsFromName(self, name, module=None, discovered=False):
-        #unittest.TestLoader.sortTestMethodsUsing = lambda _, x, y: cmp(y, x)
-        return unittest.TestLoader().loadTestsFromName(name, module)
-
+        t = unittest.TestLoader().loadTestsFromName(name, module)
+        origin_m = getattr(t._tests[0], t._tests[0]._testMethodName)
+        wrapped_m = timeout()(origin_m)
+        setattr(t._tests[0], t._tests[0]._testMethodName, wrapped_m)
+        return t

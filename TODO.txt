@@ -1,1 +1,1 @@
-1: add timeout for test case
+1: fix xml plugin issue
