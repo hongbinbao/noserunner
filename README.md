@@ -14,7 +14,15 @@ runner based on python nose testing framework
   
 ### Command-line
     usage:
-	python runtests.py [-h|--help] [--cycle CYCLE] [--duration DURATION_TIME] [--plan-file PLAN_FILE] [--livereport] [--livereport-config LIVE_REPORT_CONFIG] [--device-config DEVICE_CONFIG] [--verbosity VERBOSITY] [,[argv]]
+	python runtests.py [-h|--help]
+	                   [--cycle CYCLE]
+	                   [--duration DURATION_TIME]
+	                   [--plan-file PLAN_FILE]
+	                   [--livereport]
+	                   [--livereport-config LIVE_REPORT_CONFIG]
+	                   [--device-config DEVICE_CONFIG]
+	                   [--verbosity VERBOSITY]
+	                   [,[argv]]
 
 
     Process the paramters of runtests
