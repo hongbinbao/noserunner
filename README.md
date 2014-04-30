@@ -21,20 +21,20 @@ runner based on python nose testing framework
     optional arguments:
 	    -h, --help            Show this help message and exit
 
-	    --cycle CYCLE         Set the number(int) of cycle. Execute test with a specified number of cycle. Default is 1
+	    --cycle CYCLE         Set the number(int) of cycle. Execute test with a specified number of cycle Default is 1
 	    
 	    --plan-file PLAN      Set the absolute path or relative path of test plan file. If not provide this option. The "plan" file in current directory will be used as default
 
 	    --duration DURATION   The maxumum test duration before ending the test.
-					          Here format must follow next format: xxDxxHxxMxxS.
+					          Here format must follow next format: xxDxxHxxMxxS
 					          e.g. --duration=2D09H30M12S, which means 2 days, 09 hours, 30 minutes and 12 seconds
 
 	    --livereport          Enable the live report server feature. Default is disable
 	    
-        --livereport-config       Specify the path of the lieve report server configuration file.
+        --livereport-config   Specify the path of the lieve report server configuration file
                               If not provide this option. The "livereport.config" file in current directory will be used as default
                               
-        --device-config       Specify the path of device configuration file.
+        --device-config       Specify the path of device configuration file
                               If not provide this option. The "device.config" file in current directory will be used as default
                               
 	    --verbosity           Default is 2. set the level(1~5) of verbosity to get the help string of every test and the result
