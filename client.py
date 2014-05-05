@@ -426,11 +426,11 @@ class UploadThread(threading.Thread):
         token = kwargs.pop('token')
         log = kwargs['extras']['log']
         snapshot = kwargs['extras']['screenshot_at_failure']
-        files = {'file': open(snapshot, 'rb')}
-        headers = {'content-type': 'image/png','Ext-Type':'%s%s%s' % ('expect', ':', 'step'), 'accept': 'application/json'}     
         try:
+            files = {'file': open(snapshot, 'rb')}
+            headers = {'content-type': 'image/png','Ext-Type':'%s%s%s' % ('expect', ':', 'step'), 'accept': 'application/json'}
             ret = request(method='put', url=file_url, headers=headers, data=files['file'], timeout=10)
-        except Exception, e:
+        except:
             pass
         headers = {'content-type': 'application/zip',  'accept': 'application/json'}
         files = {'file': open(log, 'rb')}

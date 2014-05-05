@@ -380,6 +380,7 @@ class LogHandler(object):
         else:
             cmd = ANDROID_LOG_SHELL % (exe, '', '')
         self.__logger_proc = subprocess.Popen(shlex.split(cmd),\
+                                              stderr=subprocess.STDOUT,\
                                               stdout=subprocess.PIPE,\
                                               close_fds=True,\
                                               preexec_fn=self.check)
@@ -407,8 +408,12 @@ class LogHandler(object):
 
     def save(self, path):
         with open(path, 'w+') as f:
+            timeout = 0
             while self.__cache_queue.qsize() <= 0:
                 time.sleep(1)
+                timeout += 1
+                if timeout == 180:
+                    break
                 continue
             for i in range(self.__cache_queue.qsize()):
                line = self.__cache_queue.get(block=True)
