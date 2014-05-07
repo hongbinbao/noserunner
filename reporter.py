@@ -21,6 +21,7 @@ import datetime
 import traceback
 import subprocess
 import threading
+from tools import AdbCommand
 from ConfigParser import ConfigParser
 from commands import getoutput as shell
 from os.path import join, exists, dirname
@@ -182,11 +183,11 @@ def _makeLog(path, bridge='adb', serial=None, result='failure'):
     
     #snapshot & system log
     if serial:
-        shell('%s -s %s shell screencap /sdcard/%s' % (exe, serial, snapshot_name))
-        shell('%s -s %s pull /sdcard/%s %s' % (exe, serial, snapshot_name, path))
+        AdbCommand('%s -s %s shell screencap /sdcard/%s' % (exe, serial, snapshot_name)).run()
+        AdbCommand('%s -s %s pull /sdcard/%s %s' % (exe, serial, snapshot_name, path)).run()
     else:
-        shell('%s shell screencap /sdcard/%s' % (exe, snapshot_name))
-        shell('%s pull /sdcard/%s %s' % (exe, snapshot_name, path))
+        AdbCommand('%s shell screencap /sdcard/%s' % (exe, snapshot_name)).run()
+        AdbCommand('%s pull /sdcard/%s %s' % (exe, snapshot_name, path)).run()
     _zipFolder(join(dirname(path), 'logs'), join(dirname(path), 'log.zip'))
 
 class TestCounter(object):
