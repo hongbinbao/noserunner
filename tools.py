@@ -62,16 +62,17 @@ class AdbCommand(Command):
     """
     run adb command in shell
     """
-    def __init__(self, cmd, retry=3):
+    def __init__(self, cmd, retry=3, timeout=10):
         Command.__init__(self, cmd)
         self.retry = retry
+        self.timeout = timeout
 
     def run(self):
         output = None
         error = None
         status = -1
         while self.retry:
-            status, output, error = Command.run(self, timeout=10, stderr=subprocess.STDOUT)
+            status, output, error = Command.run(self, timeout=self.timeout, stderr=subprocess.STDOUT)
             if not status:
                 return output
             else:
@@ -83,4 +84,4 @@ class AdbCommand(Command):
 
 
 if __name__ == '__main__':
-    print AdbCommand('adb devices').run()
+    print AdbCommand('adb devices', retry=2, timeout=5).run()
