@@ -209,7 +209,7 @@ def retry(tries, delay=1, backoff=2):
                 time.sleep(mdelay) # wait...
                 mdelay *= backoff  # make future wait longer
                 rv = f(*args, **kwargs) # Try again
-            print 'retry %d times all failed. plese check server status' % tries
+            print 'retry %d times all failed. please check the report server status' % tries
             sys.exit(1)
             return False # Ran out of tries
         return f_retry # true decorator -> decorated function

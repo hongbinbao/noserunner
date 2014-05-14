@@ -22,9 +22,9 @@ log = logging.getLogger(__name__)
 
 
 def timeout(timeout=180):
-    """
+    '''
     decorator for tiemout
-    """
+    '''
     def func_wrapper(func):
         def arguments_wrapper(*args, **kwargs):
             q = Queue()
@@ -33,7 +33,7 @@ def timeout(timeout=180):
             try:
                 error = q.get(timeout=timeout)
             except Empty:
-                raise TimeoutException("timeout expired before end of test (%f s.)" % timeout)
+                raise TimeoutException('timeout expired before end of test %f s' % timeout)
             if error is not None:
                 exc_type, exc_value, tb = error
                 raise exc_type, exc_value, tb
@@ -41,9 +41,9 @@ def timeout(timeout=180):
     return func_wrapper
 
 class TimeoutException(AssertionError):
-    """
+    '''
     timeout exception
-    """
+    '''
     def __init__(self, value = 'Test Case Time Out'):
         self.value = value
 
@@ -51,9 +51,9 @@ class TimeoutException(AssertionError):
        return repr(self.value)
 
 class CaseThread(threading.Thread):
-    """
+    '''
     thread used to run test method
-    """
+    '''
     def __init__(self, q=None , func=None, args=(), kwargs={}):
         threading.Thread.__init__(self)
         self.daemon = True
@@ -70,18 +70,19 @@ class CaseThread(threading.Thread):
             self.__q.put(sys.exc_info())
 
 class PlanLoaderPlugin(nose.plugins.Plugin):
-    """
+    '''
     test loader plugin. allow to specify a test plan file with format:
     [tests]
     packagename.modulename.classname.testName = 10
     packagename.modulename.classname.testName = 20 
-    """
+    '''
     name = 'plan-loader'
     planfile = None
 
     def options(self, parser, env):
-        """Register commandline options.
-        """
+        '''
+        Register commandline options.
+        '''
         super(PlanLoaderPlugin, self).options(parser, env)
         parser.add_option('--plan-file', action='store', type='string', metavar="STRING",
                           dest='plan_file', default='plan',
@@ -89,18 +90,21 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
 
         parser.add_option('--loop', action='store', type='string', metavar="STRING",
                           dest='loops', default='1',
-                          help="Run the tests with specified loop number. default will execute forever ")
+                          help="Run the tests with specified loop number. default will execute forever")
+
+        parser.add_option('--timeout', action='store', type='string', metavar="STRING",
+                          dest='timeout', default='180',
+                          help="the value of timeout for each test case method. 180 seconds as default")
+
 
     def configure(self, options, conf):
-        """Configure plugin.
-        """
+        '''
+        Configure plugin.
+        '''
         super(PlanLoaderPlugin, self).configure(options, conf)
-        if not self.enabled: return
         self.conf = conf
-        if options.plan_file: self.enabled = True
-        if options.loops:
-            self.enabled = True
-            self.loops = options.loops
+        self.loops = options.loops
+        self.timeout = int(options.timeout)
         self.plan_file = os.path.expanduser(options.plan_file)
         if not os.path.isabs(self.plan_file):
             self.plan_file = os.path.join(conf.workingDir, self.plan_file)
@@ -109,9 +113,9 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
             raise Exception('file not found: %s' % self.plan_file)
 
     def prepareTestLoader(self, loader):
-        """
+        '''
         Get handle on test loader so we can use it in loadTestsFromNames.
-        """
+        '''
         self.loader = loader
         self.suiteClass = loader.suiteClass
 
@@ -132,10 +136,9 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
             n += 1
 
     def loadTestsFromNames(self, names, module=None):
-        """
+        '''
         replace the way of loading test case using plan file.
-        """
-        loader = self.loader
+        '''
         names = self.__getTestsFromPlanFile(plan_file_path=self.plan_file, section_name='tests', cycle=self.loops)
         return (None, names)
 
@@ -143,6 +146,6 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
     def loadTestsFromName(self, name, module=None, discovered=False):
         t = unittest.TestLoader().loadTestsFromName(name, module)
         origin_m = getattr(t._tests[0], t._tests[0]._testMethodName)
-        wrapped_m = timeout()(origin_m)
+        wrapped_m = timeout(timeout=self.timeout)(origin_m)
         setattr(t._tests[0], t._tests[0]._testMethodName, wrapped_m)
         return t

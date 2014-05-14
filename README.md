@@ -17,6 +17,7 @@ runner based on python nose testing framework
 	python runtests.py [-h|--help]
 	                   [--cycle CYCLE]
 	                   [--duration DURATION_TIME]
+                       [--timeout TIMEOUT_VALUE_SECONDS]
 	                   [--plan-file PLAN_FILE]
 	                   [--livereport]
 	                   [--livereport-config LIVE_REPORT_CONFIG]
@@ -37,6 +38,9 @@ runner based on python nose testing framework
 					          Here format must follow next format: xxDxxHxxMxxS
 					          e.g. --duration=2D09H30M12S, which means 2 days, 09 hours, 30 minutes and 12 seconds
 
+        --timeout SECONDS     The timeout specified in seconds to limit the maximum
+                              period of test case method. The result of test method will be failure if the timeout exceeded. Default is 180 seconds 
+                              
 	    --livereport          Enable the live report server feature. Default is disable
 	    
         --livereport-config   Specify the path of the lieve report server configuration file
@@ -53,8 +57,8 @@ runner based on python nose testing framework
         run test with 10 cycles:
         $ python runtests.py --cycle 10
         
-        run test with 2 days:
-        $ python runtests.py --duration 2d
+        run test with 2 days and set each test method timeout value to be 360 seconds:
+        $ python runtests.py --duration 2d --timeout 360
         
         run test with 10 cycles and expect to finish within 4 hours:
         $ python runtests.py --cycle 2 --duration 4h
