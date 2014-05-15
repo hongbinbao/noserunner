@@ -39,7 +39,7 @@ runner based on python nose testing framework
 					          e.g. --duration=2D09H30M12S, which means 2 days, 09 hours, 30 minutes and 12 seconds
 
         --timeout SECONDS     The timeout specified in seconds to limit the maximum
-                              period of test case method. The result of test method will be failure if the timeout exceeded. Default is 180 seconds 
+                              period of test case method execution. The result of test method will be failure if the timeout exceeded. Default is 180 seconds 
                               
 	    --livereport          Enable the live report server feature. Default is disable
 	    
