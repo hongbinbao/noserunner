@@ -121,8 +121,7 @@ def _formatOutput(name, etype, err):
     change the output format of exception
     '''
     exception_text = traceback.format_exception(*err)
-    #exception_text = "".join(exception_text).replace(os.linesep, '')
-    return exception_text
+    return ''.join(exception_text).replace('\n', '\r\n')
 
 def _zipFolder(folder_name, file_name, includeEmptyDIr=False):
     '''
@@ -696,7 +695,7 @@ class ReporterPlugin(nose.plugins.Plugin):
                                                   }
                                        })
         trace_log_path = join(ctx.user_log_dir, 'trace.txt')
-        with open(trace_log_path, 'w+') as f:
+        with open(trace_log_path, 'wb+') as f:
             f.write(str(self.result_properties['payload']['trace']))
         _makeLog(path=ctx.user_log_dir, serial=self.__configuration['deviceid'])
         try:
