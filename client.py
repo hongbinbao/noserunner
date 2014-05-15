@@ -209,7 +209,7 @@ def retry(tries, delay=1, backoff=2):
                 time.sleep(mdelay) # wait...
                 mdelay *= backoff  # make future wait longer
                 rv = f(*args, **kwargs) # Try again
-            print 'retry %d times all failed. please check the report server status' % tries
+            print "couldn't connect to report server. check the report server settings in 'livereport.config' and try again"
             sys.exit(1)
             return False # Ran out of tries
         return f_retry # true decorator -> decorated function
