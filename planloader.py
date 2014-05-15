@@ -29,6 +29,7 @@ def timeout(timeout=180):
         def arguments_wrapper(*args, **kwargs):
             q = Queue()
             _ = CaseThread(q, func, *args, **kwargs)
+            _.setDaemon(True)
             _.start()
             try:
                 error = q.get(timeout=timeout)

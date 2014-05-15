@@ -381,10 +381,10 @@ class UploadThread(threading.Thread):
         Init the instance of Sender.
         '''
         super(UploadThread, self).__init__()
+        self.daemon = True
         self.kwargs = kwargs
         self.callback = callback
         self.is_stop = False
-        #self.daemon = True
 
     def run(self):
         '''

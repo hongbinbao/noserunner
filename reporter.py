@@ -10,6 +10,7 @@ import uuid
 import json
 import nose
 import time
+import atexit
 import Queue
 import signal
 import string
@@ -371,6 +372,7 @@ class LogHandler(object):
         self.__cache_queue = Queue.Queue()
         self.__logger_proc = None
         self.__cache_thread = None
+        atexit.register(self.exit_subprocess)
         
     def start(self):
         cmd = None
@@ -386,8 +388,13 @@ class LogHandler(object):
                                               close_fds=True,\
                                               preexec_fn=self.check)
         self.__cache_thread = LogCacheWrapper(self.__logger_proc.stdout, self.__cache_queue)
+        self.__cache_thread.setDaemon(True)
         self.__cache_thread.start()
 
+
+    def exit_subprocess(self):
+        if self.__logger_proc and self.__logger_proc.poll() == None:
+            self.__logger_proc.kill()
 
     def stop(self):
         if self.__cache_thread:
@@ -427,7 +434,6 @@ class LogHandler(object):
 class LogCacheWrapper(threading.Thread):
     def __init__(self, fd, queue):
         threading.Thread.__init__(self)
-        self.daemon = True
         self.__fd = fd
         self.__queue = queue
         self.__stop = False
