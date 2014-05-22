@@ -45,11 +45,21 @@ class TimeoutException(AssertionError):
     '''
     timeout exception
     '''
-    def __init__(self, value = 'Test Case Time Out'):
+    def __init__(self, value = 'test Case Time Out'):
         self.value = value
 
     def __str__(self):
        return repr(self.value)
+
+class LoadException(AssertionError):
+    '''
+    test suite load error
+    '''
+    def __init__(self, value = 'test suite load error'):
+        self.value = value
+
+    def __str__(self):
+       return 'runner exited with loading test suite error:\n\t%s' % self.value
 
 class CaseThread(threading.Thread):
     '''
@@ -145,7 +155,10 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
 
 
     def loadTestsFromName(self, name, module=None, discovered=False):
-        t = unittest.TestLoader().loadTestsFromName(name, module)
+        try:
+            t = unittest.TestLoader().loadTestsFromName(name, module)
+        except Exception, e:
+            exit(LoadException(e))
         origin_m = getattr(t._tests[0], t._tests[0]._testMethodName)
         wrapped_m = timeout(timeout=self.timeout)(origin_m)
         setattr(t._tests[0], t._tests[0]._testMethodName, wrapped_m)
