@@ -3,15 +3,17 @@ import StringIO
 import zipfile
 import logging
 from uuid import uuid1
+from threading import Thread
+from tools import logger, logdeco
 from ConfigParser import ConfigParser
 import json, hashlib, math, time, threading, sys, os
 from os.path import dirname, abspath, join, exists, splitext, split
-from threading import Thread
+
+
 REPORT_TIME_STAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
 AUTH_REQ_TIMEOUT = 3
 REQ_TIMEOUT = 3
 
-logging.getLogger("requests").setLevel(logging.WARNING)
 ###authentication###
 #method: POST
 #request URI      : http://ats.borqs.com/smartapi/account/login
@@ -235,16 +237,21 @@ def request(method, url, data=None, **kwargs):
             ret = r.json()
     except requests.exceptions.Timeout, e:
         #sys.stderr.write(str(e))
+        logger.debug(str(e))
         pass
     except requests.exceptions.TooManyRedirects , e:
         #sys.stderr.write(str(e))
+        logger.debug(str(e))
         pass
     except requests.exceptions.RequestException , e:
+        logger.debug(str(e))
         #sys.stderr.write(str(e))
         pass
     except Exception, e:
+        logger.debug(str(e))
         #sys.stderr.write(str(e))
         pass
+    logger.debug(str(ret))
     return ret
 
 REQ_TIMEOUT = 3
