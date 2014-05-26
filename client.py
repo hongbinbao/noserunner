@@ -412,8 +412,11 @@ class UploadThread(threading.Thread):
             if self.callback: self.callback()
 
     def log(self, output):
-        with open('mylog.txt', 'a') as f:
-            f.write('%s%s' % (str(output), os.linesep))
+        try:
+            with open('mylog.txt', 'a') as f:
+                f.write('%s%s' % (str(output), os.linesep))
+        except:
+            logger.debug('error: open log file error')
 
     def basicPayloadRequest(self, **kwargs):
         headers = {'content-type': 'application/json', 'accept': 'application/json'}
@@ -438,14 +441,14 @@ class UploadThread(threading.Thread):
             headers = {'content-type': 'image/png','Ext-Type':'%s%s%s' % ('expect', ':', 'step'), 'accept': 'application/json'}
             ret = request(method='put', url=file_url, headers=headers, data=files['file'], timeout=10)
         except:
-            pass
+            logger.debug('error: extrasRequest')
         headers = {'content-type': 'application/zip',  'accept': 'application/json'}
-        files = {'file': open(log, 'rb')}
         try:
+            files = {'file': open(log, 'rb')}
             ret = request(method='put', url=file_url, headers=headers, data=files['file'], timeout=10)
         except Exception, e:
             #ret{u'msg': u'', u'data': {u'fileid': u'/file/3be61a9aef2940fc84f01278b9d6336f'}, u'result': u'ok'}
-            pass
+            logger.debug('error: extrasRequest')
     def stop(self):
         '''
         Stop the thread.

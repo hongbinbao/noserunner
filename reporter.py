@@ -18,16 +18,14 @@ import shutil
 import zipfile
 import logging
 import datetime
-import datetime
 import traceback
 import subprocess
 import threading
-from tools import AdbCommand
+from tools import AdbCommand, logger, logdeco
 from ConfigParser import ConfigParser
 from commands import getoutput as shell
 from os.path import join, exists, dirname
 from client import ReportClient
-
 
 log = logging.getLogger(__name__)
 '''global log instance'''
@@ -113,8 +111,11 @@ def _writeResultToFile(output, content):
     '''
     Used to generated brief result to local result.txt file.
     '''
-    with open(output, 'a') as f:
-        f.write('%s%s' % (json.dumps(content), os.linesep))
+    try:
+        with open(output, 'a') as f:
+            f.write('%s%s' % (json.dumps(content), os.linesep))
+    except:
+        logger.debug('error: zip folder')
 
 def _formatOutput(name, etype, err):
     '''
@@ -144,6 +145,7 @@ def _zipFolder(folder_name, file_name, includeEmptyDIr=False):
             empty_dirs = []
         return True
     except:
+        logger.debug('error: zip folder')
         return False
     finally:
         if ziper != None:
@@ -414,17 +416,23 @@ class LogHandler(object):
         return self.__cache_thread.is_alive() and not self.__logger_proc.poll()
 
     def save(self, path):
-        with open(path, 'w+') as f:
-            timeout = 0
-            while self.__cache_queue.qsize() <= 0:
-                time.sleep(1)
-                timeout += 1
-                if timeout == 180:
-                    break
-                continue
-            for i in range(self.__cache_queue.qsize()):
-               line = self.__cache_queue.get(block=True)
-               f.write(line)
+        try:
+            with open(path, 'w+') as f:
+                timeout = 0
+                while self.__cache_queue.qsize() <= 0:
+                    time.sleep(1)
+                    timeout += 1
+                    if timeout == 180:
+                        break
+                    continue
+                for i in range(self.__cache_queue.qsize()):
+                   line = self.__cache_queue.get(block=True)
+                   f.write(line)
+                return True
+        except:
+            logger.debug('error: save logcat')
+            return False
+
 
     def drop(self):
         self.__cache_queue.queue.clear()
@@ -695,8 +703,11 @@ class ReporterPlugin(nose.plugins.Plugin):
                                                   }
                                        })
         trace_log_path = join(ctx.user_log_dir, 'trace.txt')
-        with open(trace_log_path, 'wb+') as f:
-            f.write(str(self.result_properties['payload']['trace']))
+        try:
+            with open(trace_log_path, 'wb+') as f:
+                f.write(str(self.result_properties['payload']['trace']))
+        except:
+            logger.debug('error: create trace log file')
         _makeLog(path=ctx.user_log_dir, serial=self.__configuration['deviceid'])
         try:
             shutil.move(ctx.case_report_tmp_dir, self._fail_report_path)
@@ -721,8 +732,11 @@ class ReporterPlugin(nose.plugins.Plugin):
                                                   }
                                        })
         trace_log_path = join(ctx.user_log_dir, 'trace.txt')
-        with open(trace_log_path, 'w+') as f:
-            f.write(str(self.result_properties['payload']['trace']))
+        try:
+            with open(trace_log_path, 'w+') as f:
+                f.write(str(self.result_properties['payload']['trace']))
+        except:
+            logger.debug('error: create trace log file')
         _makeLog(path=ctx.user_log_dir, serial=self.__configuration['deviceid'])
         try:
             shutil.move(ctx.case_report_tmp_dir, self._error_report_path)
@@ -750,8 +764,11 @@ class ReporterPlugin(nose.plugins.Plugin):
         log_file = join(ctx.user_log_dir, LOG_FILE_NAME)
         self.__log_handler.save(log_file)
         trace_log_path = join(ctx.user_log_dir, 'trace.txt')
-        with open(trace_log_path, 'w+') as f:
-            f.write(str(self.result_properties['payload']['result']))
+        try:
+            with open(trace_log_path, 'w+') as f:
+                f.write(str(self.result_properties['payload']['result']))
+        except:
+            logger.debug('error: create trace log file')
         _makeLog(path=ctx.user_log_dir, serial=self.__configuration['deviceid'], result='pass')
         try:
             shutil.move(ctx.case_report_tmp_dir, self._pass_report_path)
