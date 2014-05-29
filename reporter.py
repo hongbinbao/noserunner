@@ -662,7 +662,7 @@ class ReporterPlugin(nose.plugins.Plugin):
             #makeLog(ctx.user_log_dir)
             #shutil.move(ctx.case_report_tmp_dir, self._fail_report_path)
         except:
-            pass
+            logger.debug('error: handle failure')
 
         self.result_properties.update({'extras': {'screenshot_at_failure': ctx.fail_screenshot_at_failure,
                                                   'log': ctx.fail_log,
@@ -682,7 +682,7 @@ class ReporterPlugin(nose.plugins.Plugin):
             self.__log_handler.save(log_file)
             #makeLog(ctx.user_log_dir)
         except:
-            pass
+            logger.debug('error: handle error')
 
         self.result_properties.update({'extras': {'screenshot_at_failure': ctx.error_screenshot_at_failure,
                                                   'log': ctx.error_log,
@@ -708,11 +708,11 @@ class ReporterPlugin(nose.plugins.Plugin):
                 f.write(str(self.result_properties['payload']['trace']))
         except:
             logger.debug('error: create trace log file')
-        _makeLog(path=ctx.user_log_dir, serial=self.__configuration['deviceid'])
         try:
+            _makeLog(path=ctx.user_log_dir, serial=self.__configuration['deviceid'])
             shutil.move(ctx.case_report_tmp_dir, self._fail_report_path)
         except:
-            pass
+            logger.debug('error: make log or move')
         if self.__timer and not self.__timer.alive():
             self.conf.stopOnError = True
         if self.opt.livereport:
@@ -737,11 +737,11 @@ class ReporterPlugin(nose.plugins.Plugin):
                 f.write(str(self.result_properties['payload']['trace']))
         except:
             logger.debug('error: create trace log file')
-        _makeLog(path=ctx.user_log_dir, serial=self.__configuration['deviceid'])
         try:
+            _makeLog(path=ctx.user_log_dir, serial=self.__configuration['deviceid'])
             shutil.move(ctx.case_report_tmp_dir, self._error_report_path)
         except:
-            pass
+            logger.debug('error: make log or move')
         if self.__timer and not self.__timer.alive():
             self.conf.stopOnError = True
 
@@ -769,11 +769,11 @@ class ReporterPlugin(nose.plugins.Plugin):
                 f.write(str(self.result_properties['payload']['result']))
         except:
             logger.debug('error: create trace log file')
-        _makeLog(path=ctx.user_log_dir, serial=self.__configuration['deviceid'], result='pass')
         try:
+            _makeLog(path=ctx.user_log_dir, serial=self.__configuration['deviceid'], result='pass')
             shutil.move(ctx.case_report_tmp_dir, self._pass_report_path)
         except:
-            pass
+            logger.debug('error: make log or move')
         if self.__timer and not self.__timer.alive():
             self.conf.stopOnError = True
         if self.opt.livereport:
