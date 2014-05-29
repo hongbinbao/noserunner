@@ -100,6 +100,13 @@ runner based on python nose testing framework
     e.g:
         python makelog.py -d path_of_report/2014-04-02_23:38:32 -f entire.log
 
+### Make device config file
+    how to:
+        python makeconfig.py --help
+        
+    e.g:
+        python makeconfig.py -s serial_number -f device.config
+
 ### Demo
 
     ├── client.py                                       #nose plugin module
