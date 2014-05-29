@@ -113,7 +113,9 @@ runner based on python nose testing framework
     ├── planloader.py                                   #nose plugin module
     ├── reporter.py                                     #nose plugin module
     ├── makelog.py                                      #make an entire log file based on report folder
+    ├── makeconfig.py                                   #generate device config file
     ├── runtests.py                                     #launch script
+    ├── tools.py                                        #unit library
     ├── scripts                                         #test case package
     │   ├── __init__.py
     │   ├── pics                                        #test case related sources
@@ -126,5 +128,6 @@ runner based on python nose testing framework
     │       ├── browser.py                              #test case for browser
     │       ├── phone.py                                #test case for phone
     └── server.config                                   #config file (server, account, device...)
-    ├── plan                                            #test case plan
+    └── device.config                                   #device config file (serial number, product name, revision number...)
+    ├── plan                                            #test case plan file
 
