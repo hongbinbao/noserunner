@@ -44,6 +44,7 @@ if __name__ == '__main__':
         prog_name = arg_copy.pop(0)
         arg_copy.insert(0, '')
         arg_copy.insert(1, '--with-plan-loader')
+        arg_copy.insert(2, '--with-live-reporter')
 
         if '--cycle' in arg_copy:
             index = arg_copy.index('--cycle')
