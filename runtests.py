@@ -55,9 +55,6 @@ if __name__ == '__main__':
             arg_copy.append('--verbosity')
             arg_copy.append(DEFAULT_VERBOSITY)
 
-        if '--livereport' in sys.argv:
-            arg_copy.append('--with-live-reporter')
-
     else:
         showUsage()
 
