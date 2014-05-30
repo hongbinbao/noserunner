@@ -42,8 +42,11 @@ TIME_STAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
 OUTPUT_FILE_NAME = 'result.txt'
 '''global test result output file name'''
 
-LOG_FILE_NAME = 'log.txt'
-'''global test log output name'''
+LOGCAT_FILE_NAME = 'logcat.txt'
+'''global logcat output name'''
+
+DMESGLOG_FILE_NAME = 'dmesg.txt'
+'''global kernel log output name'''
 
 FAILURE_SNAPSHOT_NAME = 'failure.png'
 '''default string name of result file. can be modify by user-specify'''
@@ -187,9 +190,15 @@ def _makeLog(path, bridge='adb', serial=None, result='failure'):
     if serial:
         AdbCommand('%s -s %s shell screencap /sdcard/%s' % (exe, serial, snapshot_name)).run()
         AdbCommand('%s -s %s pull /sdcard/%s %s' % (exe, serial, snapshot_name, path)).run()
+        output = AdbCommand('%s -s %s shell dmesg' % (bridge, serial)).run()
+        with open(join(path, DMESGLOG_FILE_NAME), 'w+') as o:
+            o.write(output)
     else:
         AdbCommand('%s shell screencap /sdcard/%s' % (exe, snapshot_name)).run()
         AdbCommand('%s pull /sdcard/%s %s' % (exe, snapshot_name, path)).run()
+        output = AdbCommand('%s shell dmesg' % bridge).run()
+        with open(join(path, DMESGLOG_FILE_NAME), 'w+') as o:
+            o.write(output)
     _zipFolder(join(dirname(path), 'logs'), join(dirname(path), 'log.zip'))
 
 class TestCounter(object):
@@ -657,7 +666,7 @@ class ReporterPlugin(nose.plugins.Plugin):
 
         try:
             ctx = self.__getTestCaseContext(test)
-            log_file = join(ctx.user_log_dir, LOG_FILE_NAME)
+            log_file = join(ctx.user_log_dir, LOGCAT_FILE_NAME)
             self.__log_handler.save(log_file)
             #makeLog(ctx.user_log_dir)
             #shutil.move(ctx.case_report_tmp_dir, self._fail_report_path)
@@ -678,9 +687,8 @@ class ReporterPlugin(nose.plugins.Plugin):
         
         try:
             ctx = self.__getTestCaseContext(test)
-            log_file = join(ctx.user_log_dir, LOG_FILE_NAME)
+            log_file = join(ctx.user_log_dir, LOGCAT_FILE_NAME)
             self.__log_handler.save(log_file)
-            #makeLog(ctx.user_log_dir)
         except:
             logger.debug('error: handle error')
 
@@ -711,8 +719,8 @@ class ReporterPlugin(nose.plugins.Plugin):
         try:
             _makeLog(path=ctx.user_log_dir, serial=self.__configuration['deviceid'])
             shutil.move(ctx.case_report_tmp_dir, self._fail_report_path)
-        except:
-            logger.debug('error: make log or move')
+        except Exception, e:
+            logger.debug('error: +\n'+str(e))
         if self.__timer and not self.__timer.alive():
             self.conf.stopOnError = True
         if self.opt.livereport:
@@ -740,8 +748,8 @@ class ReporterPlugin(nose.plugins.Plugin):
         try:
             _makeLog(path=ctx.user_log_dir, serial=self.__configuration['deviceid'])
             shutil.move(ctx.case_report_tmp_dir, self._error_report_path)
-        except:
-            logger.debug('error: make log or move')
+        except Exception, e:
+            logger.debug('error: +\n'+str(e))
         if self.__timer and not self.__timer.alive():
             self.conf.stopOnError = True
 
@@ -761,7 +769,7 @@ class ReporterPlugin(nose.plugins.Plugin):
                                                   }
                                       })
         #self.__log_handler.drop()
-        log_file = join(ctx.user_log_dir, LOG_FILE_NAME)
+        log_file = join(ctx.user_log_dir, LOGCAT_FILE_NAME)
         self.__log_handler.save(log_file)
         trace_log_path = join(ctx.user_log_dir, 'trace.txt')
         try:
@@ -772,8 +780,8 @@ class ReporterPlugin(nose.plugins.Plugin):
         try:
             _makeLog(path=ctx.user_log_dir, serial=self.__configuration['deviceid'], result='pass')
             shutil.move(ctx.case_report_tmp_dir, self._pass_report_path)
-        except:
-            logger.debug('error: make log or move')
+        except Exception, e:
+            logger.debug('error: +\n'+str(e))
         if self.__timer and not self.__timer.alive():
             self.conf.stopOnError = True
         if self.opt.livereport:
