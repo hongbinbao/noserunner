@@ -10,7 +10,7 @@ import ConfigParser
 from functools import wraps
 from multiprocessing import Process
 from collections import  OrderedDict
-from nose.suite import *
+#from nose.suite import *
 from Queue import Queue, Empty
 import threading
 
@@ -156,10 +156,17 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
 
     def loadTestsFromName(self, name, module=None, discovered=False):
         try:
-            t = unittest.TestLoader().loadTestsFromName(name, module)
+            suites = unittest.TestLoader().loadTestsFromName(name, module)
         except Exception, e:
             exit(LoadException(e))
-        origin_m = getattr(t._tests[0], t._tests[0]._testMethodName)
-        wrapped_m = timeout(timeout=self.timeout)(origin_m)
-        setattr(t._tests[0], t._tests[0]._testMethodName, wrapped_m)
-        return t
+        self.__injectTimeout(suites)
+        return suites
+
+    def __injectTimeout(self, suites):
+        for s in suites._tests:
+            if not isinstance(s, unittest.suite.TestSuite):
+                origin_m = getattr(s, s._testMethodName)
+                wrapped_m = timeout(timeout=self.timeout)(origin_m)
+                setattr(s, s._testMethodName, wrapped_m)
+            else:
+                self.__injectTimeout(s) 
