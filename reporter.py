@@ -187,18 +187,21 @@ def _makeLog(path, bridge='adb', serial=None, result='failure'):
     #serial = os.environ['ANDROID_SERIAL'] if os.environ.has_key('ANDROID_SERIAL') else None
     
     #snapshot & system log
-    if serial:
-        AdbCommand('%s -s %s shell screencap /sdcard/%s' % (exe, serial, snapshot_name)).run()
-        AdbCommand('%s -s %s pull /sdcard/%s %s' % (exe, serial, snapshot_name, path)).run()
-        output = AdbCommand('%s -s %s shell dmesg' % (bridge, serial)).run()
-        with open(join(path, DMESGLOG_FILE_NAME), 'w+') as o:
-            o.write(output)
-    else:
-        AdbCommand('%s shell screencap /sdcard/%s' % (exe, snapshot_name)).run()
-        AdbCommand('%s pull /sdcard/%s %s' % (exe, snapshot_name, path)).run()
-        output = AdbCommand('%s shell dmesg' % bridge).run()
-        with open(join(path, DMESGLOG_FILE_NAME), 'w+') as o:
-            o.write(output)
+    try:
+        if serial:
+            AdbCommand('%s -s %s shell screencap /sdcard/%s' % (exe, serial, snapshot_name)).run()
+            AdbCommand('%s -s %s pull /sdcard/%s %s' % (exe, serial, snapshot_name, path)).run()
+            output = AdbCommand('%s -s %s shell dmesg' % (bridge, serial)).run()
+            with open(join(path, DMESGLOG_FILE_NAME), 'w+') as o:
+                o.write(output)
+        else:
+            AdbCommand('%s shell screencap /sdcard/%s' % (exe, snapshot_name)).run()
+            AdbCommand('%s pull /sdcard/%s %s' % (exe, snapshot_name, path)).run()
+            output = AdbCommand('%s shell dmesg' % bridge).run()
+            with open(join(path, DMESGLOG_FILE_NAME), 'w+') as o:
+                o.write(output)
+    except Exception, e:
+        logger.debug('error: inner _makelog\n %s' % str(e))
     _zipFolder(join(dirname(path), 'logs'), join(dirname(path), 'log.zip'))
 
 class TestCounter(object):
@@ -718,6 +721,9 @@ class ReporterPlugin(nose.plugins.Plugin):
             logger.debug('error: create trace log file')
         try:
             _makeLog(path=ctx.user_log_dir, serial=self.__configuration['deviceid'])
+        except Exception, e:
+            logger.debug('error: +\n'+str(e))
+        try:
             shutil.move(ctx.case_report_tmp_dir, self._fail_report_path)
         except Exception, e:
             logger.debug('error: +\n'+str(e))
@@ -747,6 +753,9 @@ class ReporterPlugin(nose.plugins.Plugin):
             logger.debug('error: create trace log file')
         try:
             _makeLog(path=ctx.user_log_dir, serial=self.__configuration['deviceid'])
+        except Exception, e:
+            logger.debug('error: +\n'+str(e))
+        try:
             shutil.move(ctx.case_report_tmp_dir, self._error_report_path)
         except Exception, e:
             logger.debug('error: +\n'+str(e))
@@ -779,9 +788,13 @@ class ReporterPlugin(nose.plugins.Plugin):
             logger.debug('error: create trace log file')
         try:
             _makeLog(path=ctx.user_log_dir, serial=self.__configuration['deviceid'], result='pass')
+        except Exception, e:
+            logger.debug('error: +\n'+str(e))
+        try:
             shutil.move(ctx.case_report_tmp_dir, self._pass_report_path)
         except Exception, e:
             logger.debug('error: +\n'+str(e))
+
         if self.__timer and not self.__timer.alive():
             self.conf.stopOnError = True
         if self.opt.livereport:
