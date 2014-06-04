@@ -13,7 +13,7 @@ launcher of testing.
 
 def showUsage():
     print 'usage:'
-    print '\tpython runtests.py [-h|--help] [--cycle CYCLE] [--livereport] [--livereport-config REPORT_CONFIG] [--device-config DEVICE_CONFIG] [,[argv]]\n\n'
+    print '\tpython runtests.py [-h|--help] [--cycle CYCLE] [--duration DURATION_TIME] [--timeout TIMEOUT_VALUE_SECONDS] [--livereport] [--livereport-config REPORT_CONFIG] [--device-config DEVICE_CONFIG] [,[argv]]\n\n'
     print 'Process the paramters of runtests'
 
     print 'optional arguments:'
@@ -23,6 +23,7 @@ def showUsage():
     print '\t--duration DURATION   The minumum test duration before ending the test\n'
     print                          '\t\t\t\t\tHere format must follow next format: xxDxxHxxMxxS\n'
     print                          '\t\t\t\t\te.g. --duration=2D09H30M12S, which means 2 days, 09 hours, 30 minutes and 12 seconds\n'
+    print '\t--timeout SECONDS     The timeout specified in seconds to limit the maximum period of test case method execution. Default is 180 seconds\n'
     print '\t--livereport          Enable the report server feature. Default is disable\n'
     print '\t--livereport-config   Specify the path of live report server configuration file. If not provide this option. The "server.config" file in current directory will be used as default\n'
     print '\t--device-config       Specify the path of device configuration file. If not provide this option. The "device.config" file in current directory will be used as default\n'
