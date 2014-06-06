@@ -251,7 +251,6 @@ def request(method, url, data=None, **kwargs):
         logger.debug(str(e))
         #sys.stderr.write(str(e))
         pass
-    logger.debug(str(ret))
     return ret
 
 REQ_TIMEOUT = 3
@@ -293,8 +292,8 @@ class ReportClient(object):
         #NEW{u'msg': u'', u'data': {u'token': u'306fddbabe37011903e8f103829afc68', u'uid': 2}, u'result': u'ok|error'}
         try:
             self.token = ret['data']['token']
-        except:
-            pass
+        except Exception, e:
+            logger.debug('error: regist\n%s' % str(e))
         return self.token
 
     def createSession(self, **kwargs):
@@ -331,8 +330,8 @@ class ReportClient(object):
 
             if ret['result'] == 'ok':
                 self.created = True
-        except:
-            pass
+        except Exception, e:
+            logger.debug('error: create session\n%s' % str(e))
         return self.created
 
     def updateTestCase(self, **kwargs):
@@ -375,8 +374,8 @@ class ReportClient(object):
 
             if ret['result'] == 'ok':
                 pass
-        except:
-            pass
+        except Exception, e:
+            logger.debug('error: update session\n%s' % str(e))
 
 
 class UploadThread(threading.Thread):
@@ -399,7 +398,8 @@ class UploadThread(threading.Thread):
         '''
         try:
             if self.kwargs['payload']['result'] == 'pass':
-                self.basicPayloadRequest(**self.kwargs)
+                if self.basicPayloadRequest(**self.kwargs):
+                    self.extrasRequest(**self.kwargs)
             elif self.kwargs['payload']['result'] == 'fail':
                 if self.basicPayloadRequest(**self.kwargs):
                     self.extrasRequest(**self.kwargs)
@@ -407,7 +407,7 @@ class UploadThread(threading.Thread):
                 if self.basicPayloadRequest(**self.kwargs):
                     self.extrasRequest(**self.kwargs)
         except Exception, e:
-            pass
+            logger.debug('error: upload thread run\n%s' % str(e))
         finally:
             if self.callback: self.callback()
 
@@ -429,26 +429,28 @@ class UploadThread(threading.Thread):
             if ret['result'] == 'ok':
                 return True
         except Exception, e:
+            logger.debug('error: basicRequest\n%s' % str(e))
             return False
 
     def extrasRequest(self, **kwargs):
         file_url = kwargs.pop('file_url')
         token = kwargs.pop('token')
         log = kwargs['extras']['log']
-        snapshot = kwargs['extras']['screenshot_at_failure']
+        snapshot = kwargs['extras']['screenshot_at_last']
+        #logger.debug('snapshot upload: ' + snapshot)
+        ##snapshot = kwargs['extras']['screenshot_at_failure']
         try:
             files = {'file': open(snapshot, 'rb')}
             headers = {'content-type': 'image/png','Ext-Type':'%s%s%s' % ('expect', ':', 'step'), 'accept': 'application/json'}
             ret = request(method='put', url=file_url, headers=headers, data=files['file'], timeout=10)
-        except:
-            logger.debug('error: extrasRequest')
+        except Exception, e:
+            logger.debug('error: extraRequest snapshot\n%s' % str(e))
         headers = {'content-type': 'application/zip',  'accept': 'application/json'}
         try:
             files = {'file': open(log, 'rb')}
             ret = request(method='put', url=file_url, headers=headers, data=files['file'], timeout=10)
         except Exception, e:
-            #ret{u'msg': u'', u'data': {u'fileid': u'/file/3be61a9aef2940fc84f01278b9d6336f'}, u'result': u'ok'}
-            logger.debug('error: extrasRequest')
+            logger.debug('error: extraRequest log\n%s' % str(e))
     def stop(self):
         '''
         Stop the thread.

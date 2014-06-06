@@ -51,6 +51,9 @@ DMESGLOG_FILE_NAME = 'dmesg.txt'
 FAILURE_SNAPSHOT_NAME = 'failure.png'
 '''default string name of result file. can be modify by user-specify'''
 
+PASS_SNAPSHOT_NAME = 'pass.png'
+'''default string name of result file. can be modify by user-specify'''
+
 REPORT_TIME_STAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 ANDROID_LOG_SHELL = '%s %s %s logcat -v time'
@@ -147,8 +150,8 @@ def _zipFolder(folder_name, file_name, includeEmptyDIr=False):
                     ziper.writestr(zif, "")
             empty_dirs = []
         return True
-    except:
-        logger.debug('error: zip folder')
+    except Exception, e:
+        logger.debug('error: zip folder \n%s' % str(e))
         return False
     finally:
         if ziper != None:
@@ -201,7 +204,7 @@ def _makeLog(path, bridge='adb', serial=None, result='failure'):
             with open(join(path, DMESGLOG_FILE_NAME), 'w+') as o:
                 o.write(output)
     except Exception, e:
-        logger.debug('error: inner _makelog\n %s' % str(e))
+        logger.debug('snapshot error:\n'+str(e))
     _zipFolder(join(dirname(path), 'logs'), join(dirname(path), 'log.zip'))
 
 class TestCounter(object):
@@ -266,9 +269,10 @@ class TestCaseContext(object):
     The instance of it is injected to the context of test case instance by plugin when prepareTestCase.
     
     '''
-    def __init__(self, output_failures, output_errors):
+    def __init__(self, output_failures, output_errors, output_pass):
         self.__output_failures = output_failures
         self.__output_errors = output_errors
+        self.__output_pass = output_pass
         self.__case_start_time = None
         self.__case_end_time = None
         self.__case_dir_name = None
@@ -331,6 +335,11 @@ class TestCaseContext(object):
         return self.__case_report_dir_path
 
     @property
+    def pass_case_report_dir_path(self):
+        self.__case_report_dir_path = join(self.__output_pass, self.case_report_dir_name)
+        return self.__case_report_dir_path
+
+    @property
     def case_report_tmp_dir(self):
         self.__case_report_tmp_dir = join(join(os.getcwd(), 'tmp'), self.case_report_dir_name)
         return self.__case_report_tmp_dir
@@ -341,14 +350,26 @@ class TestCaseContext(object):
         return self.__screenshot_at_failure
 
     @property
-    def fail_log(self):
-        self.__log = join(self.fail_case_report_dir_path, 'log.zip')
-        return self.__log
+    def screenshot_at_pass(self):
+        self.__screenshot_at_failure = join(join(self.pass_case_report_dir_path, 'logs'), PASS_SNAPSHOT_NAME)
+        return self.__screenshot_at_failure
 
     @property
     def error_screenshot_at_failure(self):
         self.__screenshot_at_failure = join(join(self.error_case_report_dir_path, 'logs'), FAILURE_SNAPSHOT_NAME)
         return self.__screenshot_at_failure
+
+    @property
+    def pass_log(self):
+        self.__log = join(self.pass_case_report_dir_path, 'log.zip')
+        return self.__log
+
+
+    @property
+    def fail_log(self):
+        self.__log = join(self.fail_case_report_dir_path, 'log.zip')
+        return self.__log
+
 
     @property
     def error_log(self):
@@ -440,9 +461,9 @@ class LogHandler(object):
                 for i in range(self.__cache_queue.qsize()):
                    line = self.__cache_queue.get(block=True)
                    f.write(line)
-                return True
-        except:
-            logger.debug('error: save logcat')
+            return True
+        except Exception, e:
+            logger.debug('error: save logcat\n%s' % str(e))
             return False
 
 
@@ -601,8 +622,8 @@ class ReporterPlugin(nose.plugins.Plugin):
         '''
         try:
             self.stream.write(output)
-        except:
-            pass
+        except Exception, e:
+            logger.debug('error: output stream write\n%s' % str(e))
 
     def prepareTest(self, test):
         '''
@@ -635,7 +656,7 @@ class ReporterPlugin(nose.plugins.Plugin):
 
     def __setTestCaseContext(self, test):
         module_name, class_name, method_name = test.id().split('.')[-3:]
-        ctx = TestCaseContext(self._fail_report_path, self._error_report_path)
+        ctx = TestCaseContext(self._fail_report_path, self._error_report_path, self._pass_report_path)
         ctx.case_dir_name = '%s%s%s' % (class_name, '.', method_name)
         ctx.device_config = self.__configuration
         setattr(test.context, 'contexts', ctx)
@@ -671,12 +692,10 @@ class ReporterPlugin(nose.plugins.Plugin):
             ctx = self.__getTestCaseContext(test)
             log_file = join(ctx.user_log_dir, LOGCAT_FILE_NAME)
             self.__log_handler.save(log_file)
-            #makeLog(ctx.user_log_dir)
-            #shutil.move(ctx.case_report_tmp_dir, self._fail_report_path)
-        except:
-            logger.debug('error: handle failure')
+        except Exception, e:
+            logger.debug('error: handle failure\n%s' % str(e))
 
-        self.result_properties.update({'extras': {'screenshot_at_failure': ctx.fail_screenshot_at_failure,
+        self.result_properties.update({'extras': {'screenshot_at_last': ctx.fail_screenshot_at_failure,
                                                   'log': ctx.fail_log,
                                                   'expect': ctx.expect,
                                                   }
@@ -692,10 +711,10 @@ class ReporterPlugin(nose.plugins.Plugin):
             ctx = self.__getTestCaseContext(test)
             log_file = join(ctx.user_log_dir, LOGCAT_FILE_NAME)
             self.__log_handler.save(log_file)
-        except:
-            logger.debug('error: handle error')
+        except Exception, e:
+            logger.debug('error: handle error\n%s' % str(e))
 
-        self.result_properties.update({'extras': {'screenshot_at_failure': ctx.error_screenshot_at_failure,
+        self.result_properties.update({'extras': {'screenshot_at_last': ctx.error_screenshot_at_failure,
                                                   'log': ctx.error_log,
                                                   'expect': ctx.expect,
                                                  }
@@ -717,8 +736,8 @@ class ReporterPlugin(nose.plugins.Plugin):
         try:
             with open(trace_log_path, 'wb+') as f:
                 f.write(str(self.result_properties['payload']['trace']))
-        except:
-            logger.debug('error: create trace log file')
+        except Exception, e:
+            logger.debug('error: create trace log file \n%s' % str(e))
         try:
             _makeLog(path=ctx.user_log_dir, serial=self.__configuration['deviceid'])
         except Exception, e:
@@ -749,8 +768,8 @@ class ReporterPlugin(nose.plugins.Plugin):
         try:
             with open(trace_log_path, 'w+') as f:
                 f.write(str(self.result_properties['payload']['trace']))
-        except:
-            logger.debug('error: create trace log file')
+        except Exception, e:
+            logger.debug('error: create trace log file \n%s' % str(e))
         try:
             _makeLog(path=ctx.user_log_dir, serial=self.__configuration['deviceid'])
         except Exception, e:
@@ -777,15 +796,23 @@ class ReporterPlugin(nose.plugins.Plugin):
                                                    'result': 'pass'
                                                   }
                                       })
-        #self.__log_handler.drop()
+
+
+        self.result_properties.update({'extras': {'screenshot_at_last': ctx.screenshot_at_pass,
+                                                  'log': ctx.pass_log,
+                                                  'expect': ctx.expect,
+                                                  }
+                                      })
+
+
         log_file = join(ctx.user_log_dir, LOGCAT_FILE_NAME)
         self.__log_handler.save(log_file)
         trace_log_path = join(ctx.user_log_dir, 'trace.txt')
         try:
             with open(trace_log_path, 'w+') as f:
                 f.write(str(self.result_properties['payload']['result']))
-        except:
-            logger.debug('error: create trace log file')
+        except Exception, e:
+            logger.debug('error: create trace log file \n%s' % str(e))
         try:
             _makeLog(path=ctx.user_log_dir, serial=self.__configuration['deviceid'], result='pass')
         except Exception, e:
@@ -794,7 +821,6 @@ class ReporterPlugin(nose.plugins.Plugin):
             shutil.move(ctx.case_report_tmp_dir, self._pass_report_path)
         except Exception, e:
             logger.debug('error: +\n'+str(e))
-
         if self.__timer and not self.__timer.alive():
             self.conf.stopOnError = True
         if self.opt.livereport:
