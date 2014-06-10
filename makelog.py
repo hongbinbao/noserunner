@@ -7,6 +7,8 @@ script to make an entire log from report(fail|pass|error) folder.
 '''
 
 DEFAULT_ALL_LOG_NAME = 'alllog.txt'
+LOGCAT_FILE_NAME = 'logcat.txt'
+TIMESTAMP_FORMAT = '%Y-%m-%d_%H:%M:%S'
 def show_usage():
     print 'usage:'
     print '\tpython makelog.py [-h|--help] <-d REPORT_DIRECTORY_PATH> [-f ENTIRE_LOG_FILE_NAME]\n\n'
@@ -21,7 +23,7 @@ def show_usage():
 def callback(fs):
     name = os.path.basename(fs)
     p,f = name.split('@')
-    return int(time.mktime(time.strptime(f, '%Y-%m-%d_%H:%M:%S')))
+    return int(time.mktime(time.strptime(f, TIMESTAMP_FORMAT)))
 
 def gen_all(wd):
     gen = os.walk(wd)
@@ -41,11 +43,14 @@ def make_log(dirs, fname):
     a =  sorted(gen_all(dirs), key=callback)
     with open(log_path, 'wa+') as l:
         for f in a:
-            lf = os.path.join(os.path.join(f, 'logs'),'log.txt')
+            lf = os.path.join(os.path.join(f, 'logs'), LOGCAT_FILE_NAME)
             content = None
-            with open(lf, 'r') as ff:
-                content = ff.read()
-                l.write(content)
+            try:
+                with open(lf, 'r') as ff:
+                    content = ff.read()
+                    l.write(content)
+            except:
+                print 'file not exists. ignore it.'
     print '\n%s saved success.' % log_path
 
 if __name__ == '__main__':
