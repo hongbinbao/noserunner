@@ -625,6 +625,11 @@ class ReporterPlugin(nose.plugins.Plugin):
         except Exception, e:
             logger.debug('error: output stream write\n%s' % str(e))
 
+    def describeTest(self, test):
+        module_name, class_name, method_name = test.id().split('.')[-3:]
+        return method_name
+
+
     def prepareTest(self, test):
         '''
         enable log handler.

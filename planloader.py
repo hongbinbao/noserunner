@@ -4,15 +4,13 @@
 import os
 import sys
 import nose
+import string
 import logging
 import unittest
+import threading
 import ConfigParser
 from functools import wraps
-from multiprocessing import Process
-from collections import  OrderedDict
-#from nose.suite import *
 from Queue import Queue, Empty
-import threading
 
 """
 module for loading test suite from config file and injecting timeout check in case method level.
@@ -104,7 +102,7 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
                           help="Run the tests with specified loop number. default will execute forever")
 
         parser.add_option('--timeout', action='store', type='string', metavar="STRING",
-                          dest='timeout', default='180',
+                          dest='timeout', default=180,
                           help="the value of timeout for each test case method. 180 seconds as default")
 
 
@@ -123,28 +121,40 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
         if not os.path.exists(self.plan_file):
             raise Exception('file not found: %s' % self.plan_file)
 
-    def prepareTestLoader(self, loader):
-        '''
-        Get handle on test loader so we can use it in loadTestsFromNames.
-        '''
-        self.loader = loader
-        self.suiteClass = loader.suiteClass
 
     def __getTestsFromPlanFile(self, plan_file_path, section_name, cycle):
         '''
         load test sequence list from plan file 
         '''
-        tests = []
-        parser = ConfigParser.ConfigParser(dict_type=OrderedDict)
-        parser.optionxform = lambda x: x
-        parser.read(plan_file_path)
-        tests = parser.items(section_name)
+        #tests = []
+        #parser = ConfigParser.ConfigParser(dict_type=OrderedDict)
+        #parser.optionxform = lambda x: x
+        #parser.read(plan_file_path)
+        #tests = parser.items(section_name)
+        tests = readTestsFromConfigFile(plan_file_path, section_name)
         n = 1
         while n <= int(cycle): 
             for (k,v) in tests:
                 for i in range(int(v)):
                     yield k
             n += 1
+
+    def prepareTestLoader(self, loader):
+        """
+        support order in test suite.
+        """
+        self.loader = loader
+        def func_wrapper(func):
+            def arguments_wrapper(*args, **kwargs):
+                ret = None
+                try:
+                    ret = func(*args, **kwargs)
+                except:
+                    pass
+                return ret
+            return arguments_wrapper
+        self.loader.suiteClass.findContext = func_wrapper(self.loader.suiteClass.findContext)
+
 
     def loadTestsFromNames(self, names, module=None):
         '''
@@ -170,3 +180,72 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
                 setattr(s, s._testMethodName, wrapped_m)
             else:
                 self.__injectTimeout(s) 
+
+def readTestsFromConfigFile(name, section):
+    '''
+    Get test case list from test case plan file.
+    @type name: string
+    @param name: the path of test case plan file
+    @rtype: list
+    @return: a list of test case
+    '''
+    if not os.path.exists(name):
+        sys.stderr.write('Plan file does not exists')
+        sys.exit(1)
+
+    tests = []
+    f = open(name)
+    try:
+        tests_section = False
+        for l in f:
+            if tests_section:
+                if _isSection(l):
+                    break
+                else:
+                    o = _getOption(l)
+                    if o is not None:
+                        try:
+                            k = o[0]
+                            v = int(o[1])
+                            tests.append((k, v))
+                        except Exception, e:
+                            sys.exit(2)
+            else:
+                if _getSection(l) == section:
+                    tests_section = True
+    except Exception, e:
+        sys.exit(2)
+    finally:
+        f.close()
+    return tests
+
+def _isSection(s):
+    s = string.strip(s)
+    if _isComment(s):
+        return False
+    return len(s) >= 3 and s[0] == '[' and s[-1:] == ']' and len(string.strip(s[1:-1])) > 0
+
+def _getSection(s):
+    s = string.strip(s)
+    if _isSection(s):
+        return string.strip(s[1:-1])
+    else:
+        return None
+
+def _isOption(s):
+    s = string.strip(s)
+    if _isComment(s):
+        return False
+    ls = string.split(s, '=')
+    return len(ls) == 2 and len(string.strip(ls[0])) > 0 and len(string.strip(ls[1])) > 0
+
+def _isComment(s):
+    s = string.strip(s)
+    return len(s) > 0 and s[0] == '#'
+
+def _getOption(s):
+    if _isOption(s):
+        ls = string.split(s, '=')
+        return (string.strip(ls[0]), string.strip(ls[1]))
+    else:
+        return None
