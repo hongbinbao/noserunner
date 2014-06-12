@@ -101,7 +101,7 @@ runner based on python nose testing framework
         python makelog.py -d path_of_report/2014-04-02_23:38:32 -f entire.log
 
 ### Make device config file
-    '--device-config' option is enable as default. an available device config file must be required. device config file can be generated automatically by script.
+    '--device-config' option is enable as default. an available device config file MUST be required. device config file can be generated automatically by script.
     how to:
         python makeconfig.py --help
         
