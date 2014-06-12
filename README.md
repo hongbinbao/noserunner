@@ -133,5 +133,5 @@ runner based on python nose testing framework
     ├── plan                                            #test case plan file
 
 ### unit test
-   $ cd noserunner
-   $ python buildtest/ut.py
+    $ cd noserunner
+    $ python buildtest/ut.py
