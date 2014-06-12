@@ -131,3 +131,6 @@ runner based on python nose testing framework
     └── device.config                                   #device config file (serial number, product name, revision number...)
     ├── plan                                            #test case plan file
 
+### unit test
+   $ cd noserunner
+   $ python buildtest/ut.py
