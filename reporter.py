@@ -59,6 +59,9 @@ REPORT_TIME_STAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
 ANDROID_LOG_SHELL = '%s %s %s logcat -v time'
 '''android log shell command line'''
 
+ANDROID_KMSGLOG_SHELL = '%s %s %s shell cat /proc/kmsg'
+'''android kernel dmsg shell command line'''
+
 def _uniqueID():
     '''
     return a unique id of test session.
@@ -195,14 +198,14 @@ def _makeLog(path, bridge='adb', serial=None, result='failure'):
             AdbCommand('%s -s %s shell screencap /sdcard/%s' % (exe, serial, snapshot_name)).run()
             AdbCommand('%s -s %s pull /sdcard/%s %s' % (exe, serial, snapshot_name, path)).run()
             output = AdbCommand('%s -s %s shell dmesg' % (bridge, serial)).run()
-            with open(join(path, DMESGLOG_FILE_NAME), 'w+') as o:
-                o.write(output)
+            #with open(join(path, DMESGLOG_FILE_NAME), 'w+') as o:
+            #    o.write(output)
         else:
             AdbCommand('%s shell screencap /sdcard/%s' % (exe, snapshot_name)).run()
             AdbCommand('%s pull /sdcard/%s %s' % (exe, snapshot_name, path)).run()
             output = AdbCommand('%s shell dmesg' % bridge).run()
-            with open(join(path, DMESGLOG_FILE_NAME), 'w+') as o:
-                o.write(output)
+            #with open(join(path, DMESGLOG_FILE_NAME), 'w+') as o:
+            #    o.write(output)
     except Exception, e:
         logger.debug('snapshot error:\n'+str(e))
     _zipFolder(join(dirname(path), 'logs'), join(dirname(path), 'log.zip'))
@@ -469,7 +472,77 @@ class LogHandler(object):
 
     def drop(self):
         self.__cache_queue.queue.clear()
-            
+
+class DmesgLogHandler(object):
+    def __init__(self, bridge='adb', serial=None):
+        self.__bridge = bridge
+        self.__serial = serial
+        self.__cache_queue = Queue.Queue()
+        self.__logger_proc = None
+        self.__cache_thread = None
+        atexit.register(self.exit_subprocess)
+        
+    def start(self):
+        cmd = None
+        exe = _findExetuable(self.__bridge)
+        #serial = os.environ['ANDROID_SERIAL'] if os.environ.has_key('ANDROID_SERIAL') else None
+        if self.__serial:
+            cmd = ANDROID_KMSGLOG_SHELL % (exe, '-s', self.__serial)
+        else:
+            cmd = ANDROID_KMSGLOG_SHELL % (exe, '', '')
+        self.__logger_proc = subprocess.Popen(shlex.split(cmd),\
+                                              stderr=subprocess.STDOUT,\
+                                              stdout=subprocess.PIPE,\
+                                              close_fds=True,\
+                                              preexec_fn=self.check)
+        self.__cache_thread = LogCacheWrapper(self.__logger_proc.stdout, self.__cache_queue)
+        self.__cache_thread.setDaemon(True)
+        self.__cache_thread.start()
+
+
+    def exit_subprocess(self):
+        if self.__logger_proc and self.__logger_proc.poll() == None:
+            self.__logger_proc.kill()
+
+    def stop(self):
+        if self.__cache_thread:
+            try:
+                self.__cache_thread.stop()
+            except: pass
+        if self.__logger_proc:
+            try:
+                self.__logger_proc.kill()
+            except: pass
+
+    def check(self):
+        pass
+
+    def available(self):
+        if not self.__logger_proc or not self.__cache_thread:
+            return False
+        return self.__cache_thread.is_alive() and not self.__logger_proc.poll()
+
+    def save(self, path):
+        try:
+            with open(path, 'w+') as f:
+                timeout = 0
+                while self.__cache_queue.qsize() <= 0:
+                    time.sleep(1)
+                    timeout += 1
+                    if timeout == 180:
+                        break
+                    continue
+                for i in range(self.__cache_queue.qsize()):
+                   line = self.__cache_queue.get(block=True)
+                   f.write(line)
+            return True
+        except Exception, e:
+            logger.debug('error: save dmesg\n%s' % str(e))
+            return False
+
+
+    def drop(self):
+        self.__cache_queue.queue.clear()      
 
 class LogCacheWrapper(threading.Thread):
     def __init__(self, fd, queue):
@@ -498,6 +571,7 @@ class ReporterPlugin(nose.plugins.Plugin):
         self.__counter = counter
         self.__timer = timer
         self.__log_handler = None
+        self.__dmsglog_handler = None
         self.__configuration = {}
 
     def options(self, parser, env):
@@ -639,6 +713,12 @@ class ReporterPlugin(nose.plugins.Plugin):
         if not self.__log_handler.available():
             self.__log_handler.start()
 
+        if not self.__dmsglog_handler:
+            self.__dmsglog_handler = DmesgLogHandler(serial=self.__configuration['deviceid'])
+        if not self.__dmsglog_handler.available():
+            self.__dmsglog_handler.start()
+
+
     def begin(self):
         self.session_id = self.__counter.sid  
         self.test_start_time = getattr(self, 'test_start_time', None)
@@ -691,14 +771,18 @@ class ReporterPlugin(nose.plugins.Plugin):
         Called on addFailure. To handle the failure yourself and prevent normal failure processing, return a true value.
         '''
         self.result_properties.clear()
-        exctype, value, tb = err
-
+        ctx = self.__getTestCaseContext(test)
         try:
-            ctx = self.__getTestCaseContext(test)
             log_file = join(ctx.user_log_dir, LOGCAT_FILE_NAME)
             self.__log_handler.save(log_file)
         except Exception, e:
-            logger.debug('error: handle failure\n%s' % str(e))
+            logger.debug('error: save logcat file failure\n%s' % str(e))
+
+        try:
+            dmesg_log_file = join(ctx.user_log_dir, DMESGLOG_FILE_NAME)
+            self.__dmsglog_handler.save(dmesg_log_file)
+        except Exception, e:
+            logger.debug('error: save dmsg log failure\n%s' % str(e)) 
 
         self.result_properties.update({'extras': {'screenshot_at_last': ctx.fail_screenshot_at_failure,
                                                   'log': ctx.fail_log,
@@ -711,13 +795,18 @@ class ReporterPlugin(nose.plugins.Plugin):
         Called on addError. To handle the failure yourself and prevent normal error processing, return a true value.
         '''
         self.result_properties.clear()
-        
+        ctx = self.__getTestCaseContext(test)
         try:
-            ctx = self.__getTestCaseContext(test)
             log_file = join(ctx.user_log_dir, LOGCAT_FILE_NAME)
             self.__log_handler.save(log_file)
         except Exception, e:
-            logger.debug('error: handle error\n%s' % str(e))
+            logger.debug('error: save logcat file error\n%s' % str(e))
+
+        try:
+            dmesg_log_file = join(ctx.user_log_dir, DMESGLOG_FILE_NAME)
+            self.__dmsglog_handler.save(dmesg_log_file)
+        except Exception, e:
+            logger.debug('error: save dmsg log error\n%s' % str(e))
 
         self.result_properties.update({'extras': {'screenshot_at_last': ctx.error_screenshot_at_failure,
                                                   'log': ctx.error_log,
@@ -802,16 +891,24 @@ class ReporterPlugin(nose.plugins.Plugin):
                                                   }
                                       })
 
-
         self.result_properties.update({'extras': {'screenshot_at_last': ctx.screenshot_at_pass,
                                                   'log': ctx.pass_log,
                                                   'expect': ctx.expect,
                                                   }
                                       })
 
+        try:
+            log_file = join(ctx.user_log_dir, LOGCAT_FILE_NAME)
+            self.__log_handler.save(log_file)
+        except Exception, e:
+            logger.debug('error: create trace log file in pass\n%s' % str(e))
 
-        log_file = join(ctx.user_log_dir, LOGCAT_FILE_NAME)
-        self.__log_handler.save(log_file)
+        try:
+            dmesg_log_file = join(ctx.user_log_dir, DMESGLOG_FILE_NAME)
+            self.__dmsglog_handler.save(dmesg_log_file)
+        except Exception, e:
+            logger.debug('error: save dmsg log in pass\n%s' % str(e))
+
         trace_log_path = join(ctx.user_log_dir, 'trace.txt')
         try:
             with open(trace_log_path, 'w+') as f:

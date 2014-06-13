@@ -387,7 +387,8 @@ class UploadThread(threading.Thread):
         Init the instance of Sender.
         '''
         super(UploadThread, self).__init__()
-        self.daemon = True
+        #CHANGE: in order to wait all rquest thread finish.
+        #self.daemon = True
         self.kwargs = kwargs
         self.callback = callback
         self.is_stop = False
