@@ -4,8 +4,8 @@
 import sys
 import unittest
 from os.path import join, dirname
-sys.path.append('..')
-from noserunner import planloader
+sys.path.append(dirname(dirname(__file__)))
+import planloader
 
 
 class PlanLoaderTest(unittest.TestCase):

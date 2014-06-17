@@ -39,7 +39,7 @@ def make_log(dirs, fname):
         log_path = fname
     else:
         log_path = os.path.join(os.getcwd(), fname)
-    if os.path.exists(log_path): raise Exception('%s already exists' % log_path)
+    #if os.path.exists(log_path): raise Exception('%s already exists' % log_path)
     a =  sorted(gen_all(dirs), key=callback)
     with open(log_path, 'wa+') as l:
         for f in a:

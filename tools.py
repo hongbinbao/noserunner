@@ -3,6 +3,7 @@
 
 import os
 import time
+import stat
 import shlex
 import shutil
 import signal
