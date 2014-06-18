@@ -498,6 +498,7 @@ class DmesgLogHandler(object):
         self.__cache_thread = LogCacheWrapper(self.__logger_proc.stdout, self.__cache_queue)
         self.__cache_thread.setDaemon(True)
         self.__cache_thread.start()
+        self.__cache_thread.join(3)
 
 
     def exit_subprocess(self):
