@@ -9,7 +9,6 @@ import time
 import uuid
 import json
 import nose
-import time
 import atexit
 import Queue
 import signal
@@ -427,6 +426,7 @@ class LogHandler(object):
         self.__cache_thread = LogCacheWrapper(self.__logger_proc.stdout, self.__cache_queue)
         self.__cache_thread.setDaemon(True)
         self.__cache_thread.start()
+        self.__cache_thread.join(3)
 
 
     def exit_subprocess(self):
@@ -454,13 +454,13 @@ class LogHandler(object):
     def save(self, path):
         try:
             with open(path, 'w+') as f:
-                timeout = 0
-                while self.__cache_queue.qsize() <= 0:
-                    time.sleep(1)
-                    timeout += 1
-                    if timeout == 180:
-                        break
-                    continue
+                #timeout = 0
+                #while self.__cache_queue.qsize() <= 0:
+                #    time.sleep(1)
+                #    timeout += 1
+                #    if timeout == 180:
+                #        break
+                #    continue
                 for i in range(self.__cache_queue.qsize()):
                    line = self.__cache_queue.get(block=True)
                    f.write(line)
@@ -525,13 +525,13 @@ class DmesgLogHandler(object):
     def save(self, path):
         try:
             with open(path, 'w+') as f:
-                timeout = 0
-                while self.__cache_queue.qsize() <= 0:
-                    time.sleep(1)
-                    timeout += 1
-                    if timeout == 180:
-                        break
-                    continue
+                #timeout = 0
+                #while self.__cache_queue.qsize() <= 0:
+                #    time.sleep(1)
+                #    timeout += 1
+                #    if timeout == 180:
+                #        break
+                #    continue
                 for i in range(self.__cache_queue.qsize()):
                    line = self.__cache_queue.get(block=True)
                    f.write(line)
@@ -548,6 +548,7 @@ class LogCacheWrapper(threading.Thread):
     def __init__(self, fd, queue):
         threading.Thread.__init__(self)
         self.__fd = fd
+        #self.daemon = True
         self.__queue = queue
         self.__stop = False
 
@@ -555,8 +556,9 @@ class LogCacheWrapper(threading.Thread):
         self.__stop = True
 
     def run(self):
-        for line in iter(self.__fd.readline, ''):
-            self.__queue.put(line)
+        while True:
+            for line in iter(self.__fd.readline, ''):
+                self.__queue.put(line)
 
 class ReporterPlugin(nose.plugins.Plugin):
     """
