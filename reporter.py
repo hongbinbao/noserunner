@@ -196,13 +196,13 @@ def _makeLog(path, bridge='adb', serial=None, result='failure'):
         if serial:
             AdbCommand('%s -s %s shell screencap /sdcard/%s' % (exe, serial, snapshot_name)).run()
             AdbCommand('%s -s %s pull /sdcard/%s %s' % (exe, serial, snapshot_name, path)).run()
-            output = AdbCommand('%s -s %s shell dmesg' % (bridge, serial)).run()
+            #output = AdbCommand('%s -s %s shell dmesg' % (bridge, serial)).run()
             #with open(join(path, DMESGLOG_FILE_NAME), 'w+') as o:
             #    o.write(output)
         else:
             AdbCommand('%s shell screencap /sdcard/%s' % (exe, snapshot_name)).run()
             AdbCommand('%s pull /sdcard/%s %s' % (exe, snapshot_name, path)).run()
-            output = AdbCommand('%s shell dmesg' % bridge).run()
+            #output = AdbCommand('%s shell dmesg' % bridge).run()
             #with open(join(path, DMESGLOG_FILE_NAME), 'w+') as o:
             #    o.write(output)
     except Exception, e:
@@ -707,10 +707,25 @@ class ReporterPlugin(nose.plugins.Plugin):
         return method_name
 
 
+    def __pingXDB(self):
+        output = AdbCommand('%s -s %s shell echo ping' % ('adb', self.__configuration['deviceid'])).run()
+        return output
+
     def prepareTest(self, test):
         '''
         enable log handler.
         '''
+        output = ''
+        try:
+            output = self.__pingXDB()
+        except Exception, e:
+            logger.debug('ping debug bridge error: \n' + str(e))
+            if output.strip() != 'ping':
+                sys.stderr.write('runner exit due to: %s\n' % str(e))
+                sys.exit(1)
+        if output.strip() != 'ping':
+            sys.stderr.write('runner exit due to: %s\n' % 'adb echo ping failed')
+            sys.exit(1)
         if not self.__log_handler:
             self.__log_handler = LogHandler(serial=self.__configuration['deviceid'])
         if not self.__log_handler.available():
