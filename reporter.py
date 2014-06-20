@@ -783,7 +783,6 @@ class ReporterPlugin(nose.plugins.Plugin):
         if self.write_hashes:
             self.__write('#%s %s ' % (str(self.tid), str(ctx.case_start_time)))
 
-
     def handleFailure(self, test, err):
         '''
         Called on addFailure. To handle the failure yourself and prevent normal failure processing, return a true value.
@@ -892,7 +891,6 @@ class ReporterPlugin(nose.plugins.Plugin):
             logger.debug('error: +\n'+str(e))
         if self.__timer and not self.__timer.alive():
             self.conf.stopOnError = True
-
         if self.opt.livereport:
             self.__report_client.updateTestCase(**self.result_properties)
 
@@ -966,5 +964,8 @@ class ReporterPlugin(nose.plugins.Plugin):
         if self.conf.stopOnError and self.opt.livereport:
             session_properties.update({'endtime': _reportTime()})
             self.__report_client.updateSession(**session_properties)
+            sys.exit(1)
+        if self.conf.stopOnError:
+            sys.stderr.write('runner exit due to duration timeout\n')
             sys.exit(1)
         return None
