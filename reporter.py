@@ -101,10 +101,13 @@ def _time():
     #return time.strftime(TIME_STAMP_FORMAT, time.localtime(time.time()))
     return str(datetime.datetime.now())
 
-def _reportTime():
+def _reportTime(delay=0):
     '''
     return time stamp format with REPORT_TIME_STAMP_FORMAT
     '''
+    if delay != 0:
+        time.sleep(1)
+    #return time.strftime(REPORT_TIME_STAMP_FORMAT, time.localtime(time.time()+delay))
     return time.strftime(REPORT_TIME_STAMP_FORMAT, time.localtime(time.time()))
 
 def _mkdir(path):
@@ -776,7 +779,12 @@ class ReporterPlugin(nose.plugins.Plugin):
         """
         self.tid = self.__counter.next_tid()
         ctx = self.__getTestCaseContext(test)
-        ctx.case_start_time = _reportTime()
+        stime = _reportTime()
+        if getattr(self, 'previous_start_time', '') == stime:
+            self.previous_start_time = _reportTime(delay=1)
+        else:
+            self.previous_start_time = stime
+        ctx.case_start_time = self.previous_start_time
         ctx.user_log_dir = join(ctx.case_report_tmp_dir, 'logs')
         path = _mkdir(ctx.user_log_dir)
 
@@ -833,7 +841,14 @@ class ReporterPlugin(nose.plugins.Plugin):
 
     def addFailure(self, test, err, capt=None, tbinfo=None):
         ctx = self.__getTestCaseContext(test)
-        ctx.case_end_time = _reportTime()
+        #ctx.case_end_time = _reportTime()
+        etime = _reportTime()
+        if getattr(self, 'previous_end_time', '') == etime:
+            self.previous_end_time = _reportTime(delay=1)
+        else:
+            self.previous_end_time = etime
+        ctx.case_end_time = self.previous_end_time
+
         #payload data
         self.result_properties.update({'payload': {'tid': self.tid,
                                                   'casename': ctx.case_dir_name,
@@ -843,6 +858,7 @@ class ReporterPlugin(nose.plugins.Plugin):
                                                   'trace':_formatOutput(ctx.case_dir_name, 'fail', err)
                                                   }
                                        })
+
         trace_log_path = join(ctx.user_log_dir, 'trace.txt')
         try:
             with open(trace_log_path, 'wb+') as f:
@@ -865,7 +881,13 @@ class ReporterPlugin(nose.plugins.Plugin):
     #remote upload
     def addError(self, test, err, capt=None):
         ctx = self.__getTestCaseContext(test)
-        ctx.case_end_time = _reportTime()
+        #ctx.case_end_time = _reportTime()
+        etime = _reportTime()
+        if getattr(self, 'previous_end_time', '') == etime:
+            self.previous_end_time = _reportTime(delay=1)
+        else:
+            self.previous_end_time = etime
+        ctx.case_end_time = self.previous_end_time
 
         self.result_properties.update({'payload': {'tid': self.tid,
                                                   'casename': ctx.case_dir_name,
@@ -875,6 +897,7 @@ class ReporterPlugin(nose.plugins.Plugin):
                                                   'trace':_formatOutput(ctx.case_dir_name, 'error', err)
                                                   }
                                        })
+
         trace_log_path = join(ctx.user_log_dir, 'trace.txt')
         try:
             with open(trace_log_path, 'w+') as f:
@@ -897,7 +920,13 @@ class ReporterPlugin(nose.plugins.Plugin):
     #remote upload
     def addSuccess(self, test, capt=None):
         ctx = self.__getTestCaseContext(test)
-        ctx.case_end_time = _reportTime()
+        #ctx.case_end_time = _reportTime()
+        etime = _reportTime()
+        if getattr(self, 'previous_end_time', '') == etime:
+            self.previous_end_time = _reportTime(delay=1)
+        else:
+            self.previous_end_time = etime
+        ctx.case_end_time = self.previous_end_time
         self.result_properties.clear()
         self.result_properties.update({'payload': {'tid': self.tid,
                                                    'casename': ctx.case_dir_name,
@@ -967,5 +996,16 @@ class ReporterPlugin(nose.plugins.Plugin):
             sys.exit(1)
         if self.conf.stopOnError:
             sys.stderr.write('runner exit due to duration timeout\n')
+            sys.exit(1)
+        output = ''
+        try:
+            output = self.__pingXDB()
+        except Exception, e:
+            logger.debug('ping debug bridge error: \n' + str(e))
+            if output.strip() != 'ping':
+                sys.stderr.write('runner exit due to: %s\n' % str(e))
+                sys.exit(1)
+        if output.strip() != 'ping':
+            sys.stderr.write('runner exit due to: %s\n' % 'adb echo ping failed')
             sys.exit(1)
         return None
