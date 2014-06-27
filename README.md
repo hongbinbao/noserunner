@@ -1,4 +1,4 @@
-noserunner 0.0.2
+noserunner 1.0
 ==========
 
 runner based on python nose testing framework
@@ -17,11 +17,11 @@ runner based on python nose testing framework
 	python runtests.py [-h|--help]
 	                   [--cycle CYCLE]
 	                   [--duration DURATION_TIME]
-                       [--timeout TIMEOUT_VALUE_SECONDS]
+                           [--timeout TIMEOUT_VALUE_SECONDS]
 	                   [--plan-file PLAN_FILE]
 	                   [--livereport]
-	                   [--livereport-config LIVE_REPORT_CONFIG]
-	                   [--device-config DEVICE_CONFIG]
+	                   [--server-config SERVER_CONFIG]
+	                   [--client-config CLIENT_CONFIG]
 	                   [--verbosity VERBOSITY]
 	                   [,[argv]]
 
@@ -43,11 +43,11 @@ runner based on python nose testing framework
                               
 	    --livereport          Enable the live report server feature. Default is disable
 	    
-        --livereport-config   Specify the path of the lieve report server configuration file
-                              If not provide this option. The "livereport.config" file in current directory will be used as default
+        --server-config       Specify the path of the lieve report server configuration file
+                              If not provide this option. The "server.config" file in current directory will be used as default
                               
-        --device-config       Specify the path of device configuration file
-                              If not provide this option. The "device.config" file in current directory will be used as default
+        --client-config       Specify the path of device configuration file
+                              If not provide this option. The "client.config" file in current directory will be used as default
                               
 	    --verbosity           Default is 2. set the level(1~5) of verbosity to get the help string of every test and the result
 	    
@@ -70,7 +70,7 @@ runner based on python nose testing framework
         $ python runtests.py --cycle 10 --livereport
         
         specify the config file location of the live report server and device: 
-        $ python runtests.py --plan-file plan --cycle 10 --device-config device.config --livereport-config livereport.config --livereport
+        $ python runtests.py --plan-file plan --cycle 10 --client-config device.config --server-config livereport.config --livereport
         
 ### TestCaseContext instance provided by nose plugin
 
@@ -106,7 +106,7 @@ runner based on python nose testing framework
         python makeconfig.py --help
         
     e.g:
-        python makeconfig.py -s serial_number -f device.config
+        python makeconfig.py -s serial_number -f server.config
 
 ### Demo
 
@@ -128,9 +128,19 @@ runner based on python nose testing framework
     │       ├── __init__.py 
     │       ├── browser.py                              #test case for browser
     │       ├── phone.py                                #test case for phone
-    └── server.config                                   #config file (server, account, device...)
-    └── device.config                                   #device config file (serial number, product name, revision number...)
+    └── server.config                                   #server config file (server, account, device...)
+    └── client.config                                   #device config file (serial number, product name, revision number...)
     ├── plan                                            #test case plan file
+    ├── buildtest                                       #unit test package
+    │   ├── planloader_test.py
+    │   ├── reporter_test.py
+    │   ├── resource
+    │   │   ├── device.config
+    │   │   ├── livereport.config
+    │   │   ├── plan
+    │   │   └── repeatplan
+    │   └── ut.py
+
 
 ### unit test
     $ cd noserunner
