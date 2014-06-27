@@ -1,6 +1,5 @@
 #!/usr/bin/python
-# -*- coding:utf-8 -*- 
-
+# -*- coding:utf-8 -*-
 
 import os
 import sys
@@ -11,28 +10,22 @@ import json
 import nose
 import atexit
 import Queue
-import signal
 import string
 import shutil
 import zipfile
-import logging
 import datetime
 import traceback
 import subprocess
 import threading
-from tools import AdbCommand, logger, logdeco
+from tools import AdbCommand, logger
 from ConfigParser import ConfigParser
-from commands import getoutput as shell
 from os.path import join, exists, dirname
 from client import ReportClient
-
-log = logging.getLogger(__name__)
-'''global log instance'''
 
 LOCATION_NOT_FOUND_EXCEPTION = '%s not found.'
 '''error msg if adb not found'''
 
-TAG='%s%s%s' % ('-' * 18, 'live report plugin', '-' * 18)
+TAG = '%s%s%s' % ('-' * 18, 'live report plugin', '-' * 18)
 '''global log output tag'''
 
 TIME_STAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
@@ -67,18 +60,17 @@ def _uniqueID():
     '''
     return str(uuid.uuid1())
 
-
 def _getServerConfiguration(config):
     ret = {}
     cf = ConfigParser()
     cf.read(config)
-    ret.update({'username': cf.get('account', 'username'),\
-                'password': cf.get('account', 'password'),\
-                'auth': cf.get('server', 'auth'),\
-                'session_create': cf.get('server', 'session_create'),\
-                'session_update': cf.get('server', 'session_update'),\
-                'case_update': cf.get('server', 'case_update'),\
-                'file_upload': cf.get('server', 'file_upload')              
+    ret.update({'username': cf.get('account', 'username'),
+                'password': cf.get('account', 'password'),
+                'auth': cf.get('server', 'auth'),
+                'session_create': cf.get('server', 'session_create'),
+                'session_update': cf.get('server', 'session_update'),
+                'case_update': cf.get('server', 'case_update'),
+                'file_upload': cf.get('server', 'file_upload')
                })
     return ret
 
@@ -90,7 +82,7 @@ def _getDeviceConfiguration(config):
                 'revision': cf.get('device', 'revision'),
                 'deviceid': cf.get('device', 'deviceid'),
                 'screen_width': cf.get('device', 'screen_width'),
-                'screen_height': cf.get('device', 'screen_height')                   
+                'screen_height': cf.get('device', 'screen_height')
                })
     return ret
 
@@ -140,19 +132,16 @@ def _zipFolder(folder_name, file_name, includeEmptyDIr=False):
     create a zip file for folder
     '''
     empty_dirs = []
-    try:  
-        ziper = zipfile.ZipFile(file_name, 'w', zipfile.ZIP_DEFLATED)  
+    try:
+        ziper = zipfile.ZipFile(file_name, 'w', zipfile.ZIP_DEFLATED)
         for root, dirs, files in os.walk(folder_name):
-            empty_dirs.extend([d for d in dirs if os.listdir(os.path.join(root, d)) == []])  
+            empty_dirs.extend([d for d in dirs if os.listdir(os.path.join(root, d)) == []])
             for name in files:
-                ziper.write(os.path.join(root ,name), name)
-                #fix same name error
-                #full zip with parent dir
-                #ziper.write(os.path.join(root ,name), os.path.join(os.path.splitext(filename)[0],name))
-            if includeEmptyDIr:  
-                for d in empty_dirs:  
-                    zif = zipfile.ZipInfo(os.path.join(root, d) + "/")  
-                    ziper.writestr(zif, "")
+                ziper.write(os.path.join(root , name), name)
+            if includeEmptyDIr:
+                for d in empty_dirs:
+                    zif = zipfile.ZipInfo(os.path.join(root, d) + os.sep)
+                    ziper.writestr(zif, '')
             empty_dirs = []
         return True
     except Exception, e:
@@ -369,12 +358,10 @@ class TestCaseContext(object):
         self.__log = join(self.pass_case_report_dir_path, 'log.zip')
         return self.__log
 
-
     @property
     def fail_log(self):
         self.__log = join(self.fail_case_report_dir_path, 'log.zip')
         return self.__log
-
 
     @property
     def error_log(self):
@@ -421,10 +408,10 @@ class LogHandler(object):
             cmd = ANDROID_LOG_SHELL % (exe, '-s', self.__serial)
         else:
             cmd = ANDROID_LOG_SHELL % (exe, '', '')
-        self.__logger_proc = subprocess.Popen(shlex.split(cmd),\
-                                              stderr=subprocess.STDOUT,\
-                                              stdout=subprocess.PIPE,\
-                                              close_fds=True,\
+        self.__logger_proc = subprocess.Popen(shlex.split(cmd),
+                                              stderr=subprocess.STDOUT,
+                                              stdout=subprocess.PIPE,
+                                              close_fds=True,
                                               preexec_fn=self.check)
         self.__cache_thread = LogCacheWrapper(self.__logger_proc.stdout, self.__cache_queue)
         self.__cache_thread.setDaemon(True)
@@ -465,13 +452,12 @@ class LogHandler(object):
                 #        break
                 #    continue
                 for i in range(self.__cache_queue.qsize()):
-                   line = self.__cache_queue.get(block=True)
-                   f.write(line)
+                    line = self.__cache_queue.get(block=True)
+                    f.write(line)
             return True
         except Exception, e:
             logger.debug('error: save logcat\n%s' % str(e))
             return False
-
 
     def drop(self):
         self.__cache_queue.queue.clear()
@@ -493,10 +479,10 @@ class DmesgLogHandler(object):
             cmd = ANDROID_KMSGLOG_SHELL % (exe, '-s', self.__serial)
         else:
             cmd = ANDROID_KMSGLOG_SHELL % (exe, '', '')
-        self.__logger_proc = subprocess.Popen(shlex.split(cmd),\
-                                              stderr=subprocess.STDOUT,\
-                                              stdout=subprocess.PIPE,\
-                                              close_fds=True,\
+        self.__logger_proc = subprocess.Popen(shlex.split(cmd),
+                                              stderr=subprocess.STDOUT,
+                                              stdout=subprocess.PIPE,
+                                              close_fds=True,
                                               preexec_fn=self.check)
         self.__cache_thread = LogCacheWrapper(self.__logger_proc.stdout, self.__cache_queue)
         self.__cache_thread.setDaemon(True)
@@ -537,16 +523,15 @@ class DmesgLogHandler(object):
                 #        break
                 #    continue
                 for i in range(self.__cache_queue.qsize()):
-                   line = self.__cache_queue.get(block=True)
-                   f.write(line)
+                    line = self.__cache_queue.get(block=True)
+                    f.write(line)
             return True
         except Exception, e:
             logger.debug('error: save dmesg\n%s' % str(e))
             return False
 
-
     def drop(self):
-        self.__cache_queue.queue.clear()      
+        self.__cache_queue.queue.clear()
 
 class LogCacheWrapper(threading.Thread):
     def __init__(self, fd, queue):
@@ -596,7 +581,7 @@ class ReporterPlugin(nose.plugins.Plugin):
                           dest='directory', default=self.__getDefault(),
                           help="save output file to this directory. default is current nose worspace")
 
-        parser.add_option('--icycle', action='store', type='string',metavar="STRING",
+        parser.add_option('--icycle', action='store', type='string', metavar="STRING",
                           dest='icycle', default=None, help="total cycle flag")
 
         ###report server config###
@@ -604,15 +589,15 @@ class ReporterPlugin(nose.plugins.Plugin):
                           dest='livereport', default=False,
                           help="switcher of uploading result to live report server. default is enable the feature")
 
-        parser.add_option('--livereport-config', action='store',  metavar="FILE",
-                          dest='livereport_config', default='livereport.config',
+        parser.add_option('--server-config', action='store',  metavar="FILE",
+                          dest='livereport_config', default='server.config',
                           help="specify the live report server configuration file path")
 
-        parser.add_option('--device-config', action='store',  metavar="FILE",
-                          dest='device_config', default='device.config',
+        parser.add_option('--client-config', action='store',  metavar="FILE",
+                          dest='device_config', default='client.config',
                           help="specify the device config file path")
 
-        parser.add_option('--duration', dest='duration', type='string',metavar="STRING",
+        parser.add_option('--duration', dest='duration', type='string', metavar="STRING",
                           action='callback', callback=self.__validate_duration, 
                           help='The minumum test duration before ending the test.\
                                   Here format must follow next format: xxDxxHxxMxxS.\
@@ -620,6 +605,7 @@ class ReporterPlugin(nose.plugins.Plugin):
 
     def __validate_duration(self, option, opt, value, parser):
         '''
+        verify date time format
         '''
         value = string.lower(value)
         begin = 0
@@ -638,8 +624,8 @@ class ReporterPlugin(nose.plugins.Plugin):
                 seconds = int(value[begin:i])
                 begin = i + 1
         if begin == 0:
-            parser.error('%s: duration format error' % value) 
-        times = datetime.timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)      
+            parser.error('%s: duration format error' % value)
+        times = datetime.timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
         setattr(parser.values, option.dest, times)
 
     def __getDefault(self):
@@ -680,8 +666,8 @@ class ReporterPlugin(nose.plugins.Plugin):
         self.result_properties = {'payload': None, 'extras': None}
         #if disable report server
         if self.opt.livereport and not self.__report_client:
-            server_need = {'username':None, 'password':None, 'auth':None, 'session_create':None,
-                           'session_update':None, 'case_create':None, 'case_update':None, 'file_upload':None}
+            #server_need = {'username':None, 'password':None, 'auth':None, 'session_create':None,
+            #               'session_update':None, 'case_create':None, 'case_update':None, 'file_upload':None}
             self.__report_client =  ReportClient(**self.__configuration)
             self.token = self.__report_client.regist()
             if not self.token:
@@ -708,7 +694,6 @@ class ReporterPlugin(nose.plugins.Plugin):
     def describeTest(self, test):
         module_name, class_name, method_name = test.id().split('.')[-3:]
         return method_name
-
 
     def __pingXDB(self):
         output = AdbCommand('%s -s %s shell echo ping' % ('adb', self.__configuration['deviceid'])).run()
@@ -739,9 +724,8 @@ class ReporterPlugin(nose.plugins.Plugin):
         if not self.__dmsglog_handler.available():
             self.__dmsglog_handler.start()
 
-
     def begin(self):
-        self.session_id = self.__counter.sid  
+        self.session_id = self.__counter.sid
         self.test_start_time = getattr(self, 'test_start_time', None)
         if not self.test_start_time:
             self.test_start_time = _reportTime()
@@ -751,12 +735,10 @@ class ReporterPlugin(nose.plugins.Plugin):
         self._fail_report_path = _mkdir(join(self._report_path, 'fail'))
         self._error_report_path = _mkdir(join(self._report_path, 'error'))
         self._timeout_report_path = _mkdir(join(self._report_path, 'timeout'))
-        session_properties = {'sid': self.session_id,
-                              'starttime': self.test_start_time
-                              }
+        session_properties = {'sid': self.session_id, 'starttime': self.test_start_time}
         self.cid = self.__counter.next_cid()
         if self.write_hashes:
-            sys.stderr.write('begin cycle: %s \n' % (self.cid))                          
+            sys.stderr.write('begin cycle: %s \n' % (self.cid))
         if self.opt.livereport and not self.__report_client.created:
             self.__report_client.createSession(**session_properties)
 
@@ -807,7 +789,7 @@ class ReporterPlugin(nose.plugins.Plugin):
             dmesg_log_file = join(ctx.user_log_dir, DMESGLOG_FILE_NAME)
             self.__dmsglog_handler.save(dmesg_log_file)
         except Exception, e:
-            logger.debug('error: save dmsg log failure\n%s' % str(e)) 
+            logger.debug('error: save dmsg log failure\n%s' % str(e))
 
         self.result_properties.update({'extras': {'screenshot_at_last': ctx.fail_screenshot_at_failure,
                                                   'log': ctx.fail_log,
@@ -980,12 +962,12 @@ class ReporterPlugin(nose.plugins.Plugin):
         elif self.opt.icycle and self.__counter:
             session_properties.update({'status': self.__counter.progress()})
         if self.opt.livereport:
-            self.__report_client.updateSession(**session_properties)                            
+            self.__report_client.updateSession(**session_properties)
         return None
 
     def finalize(self, result):
         if self.write_hashes:
-            self.__write('end cycle: %s \n' % (self.cid)) 
+            self.__write('end cycle: %s \n' % (self.cid))
         session_properties = {'sid': self.session_id}
         if self.opt.icycle and not self.__counter.alive() and self.opt.livereport:
             session_properties.update({'endtime': _reportTime()})
