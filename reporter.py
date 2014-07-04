@@ -408,16 +408,17 @@ class LogHandler(object):
             cmd = ANDROID_LOG_SHELL % (exe, '-s', self.__serial)
         else:
             cmd = ANDROID_LOG_SHELL % (exe, '', '')
-        self.__logger_proc = subprocess.Popen(shlex.split(cmd),
+        cmds = shlex.split(cmd)
+        self.__logger_proc = subprocess.Popen(cmds,
                                               stderr=subprocess.STDOUT,
                                               stdout=subprocess.PIPE,
                                               close_fds=True,
                                               preexec_fn=self.check)
-        self.__cache_thread = LogCacheWrapper(self.__logger_proc.stdout, self.__cache_queue)
+        #self.__cache_thread = LogCacheWrapper(self.__logger_proc.stdout, self.__cache_queue)
+        self.__cache_thread = LogCacheWrapper(self.__logger_proc, self.__cache_queue, cmds)
         self.__cache_thread.setDaemon(True)
         self.__cache_thread.start()
         self.__cache_thread.join(3)
-
 
     def exit_subprocess(self):
         if self.__logger_proc and self.__logger_proc.poll() == None:
@@ -479,16 +480,16 @@ class DmesgLogHandler(object):
             cmd = ANDROID_KMSGLOG_SHELL % (exe, '-s', self.__serial)
         else:
             cmd = ANDROID_KMSGLOG_SHELL % (exe, '', '')
-        self.__logger_proc = subprocess.Popen(shlex.split(cmd),
+        cmds = shlex.split(cmd)
+        self.__logger_proc = subprocess.Popen(cmds,
                                               stderr=subprocess.STDOUT,
                                               stdout=subprocess.PIPE,
                                               close_fds=True,
                                               preexec_fn=self.check)
-        self.__cache_thread = LogCacheWrapper(self.__logger_proc.stdout, self.__cache_queue)
+        self.__cache_thread = LogCacheWrapper(self.__logger_proc, self.__cache_queue, cmds)
         self.__cache_thread.setDaemon(True)
         self.__cache_thread.start()
         self.__cache_thread.join(3)
-
 
     def exit_subprocess(self):
         if self.__logger_proc and self.__logger_proc.poll() == None:
@@ -534,10 +535,11 @@ class DmesgLogHandler(object):
         self.__cache_queue.queue.clear()
 
 class LogCacheWrapper(threading.Thread):
-    def __init__(self, fd, queue):
+    def __init__(self, fd, queue, cmd):
         threading.Thread.__init__(self)
         self.__fd = fd
         #self.daemon = True
+        self.__cmd = cmd
         self.__queue = queue
         self.__stop = False
 
@@ -546,8 +548,22 @@ class LogCacheWrapper(threading.Thread):
 
     def run(self):
         while True:
-            for line in iter(self.__fd.readline, ''):
+            for line in iter(self.__fd.stdout.readline, ''):
                 self.__queue.put(line)
+            if self.__fd.poll() == 0:
+                self.__fd = self.restart()
+
+    def restart(self):
+        logger_proc = None
+        while True:
+            logger_proc = subprocess.Popen(self.__cmd,
+                                           stderr=subprocess.STDOUT,
+                                           stdout=subprocess.PIPE,
+                                           close_fds=True)
+            time.sleep(3)
+            if logger_proc.poll() == None:
+                return logger_proc
+            
 
 class ReporterPlugin(nose.plugins.Plugin):
     """
