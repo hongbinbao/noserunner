@@ -90,7 +90,6 @@ def _time():
     '''
     generic time stamp format
     '''
-    #return time.strftime(TIME_STAMP_FORMAT, time.localtime(time.time()))
     return str(datetime.datetime.now())
 
 def _reportTime(delay=0):
@@ -99,7 +98,6 @@ def _reportTime(delay=0):
     '''
     if delay != 0:
         time.sleep(1)
-    #return time.strftime(REPORT_TIME_STAMP_FORMAT, time.localtime(time.time()+delay))
     return time.strftime(REPORT_TIME_STAMP_FORMAT, time.localtime(time.time()))
 
 def _mkdir(path):
@@ -181,22 +179,13 @@ def _makeLog(path, bridge='adb', serial=None, result='failure'):
     path = _mkdir(path)
     exe  = _findExetuable(bridge)
     snapshot_name = '%s%s%s' % (result, '.', 'png')
-    #serial = os.environ['ANDROID_SERIAL'] if os.environ.has_key('ANDROID_SERIAL') else None
-    
-    #snapshot & system log
     try:
         if serial:
             AdbCommand('%s -s %s shell screencap /sdcard/%s' % (exe, serial, snapshot_name)).run()
             AdbCommand('%s -s %s pull /sdcard/%s %s' % (exe, serial, snapshot_name, path)).run()
-            #output = AdbCommand('%s -s %s shell dmesg' % (bridge, serial)).run()
-            #with open(join(path, DMESGLOG_FILE_NAME), 'w+') as o:
-            #    o.write(output)
         else:
             AdbCommand('%s shell screencap /sdcard/%s' % (exe, snapshot_name)).run()
             AdbCommand('%s pull /sdcard/%s %s' % (exe, snapshot_name, path)).run()
-            #output = AdbCommand('%s shell dmesg' % bridge).run()
-            #with open(join(path, DMESGLOG_FILE_NAME), 'w+') as o:
-            #    o.write(output)
     except Exception, e:
         logger.debug('snapshot error:\n'+str(e))
     _zipFolder(join(dirname(path), 'logs'), join(dirname(path), 'log.zip'))
@@ -234,7 +223,6 @@ class TestCounter(object):
 
     def progress(self):
         if self.__total_cycle:
-            #return '%.0f%%' % (100.0 * self.__cid/int(self.__total_cycle))
             return '%0.2f' % (float(self.__cid)/float(self.__total_cycle))
         else:
             return 'unkown'
@@ -311,13 +299,11 @@ class TestCaseContext(object):
     def case_dir_name(self, v):
         self.__case_dir_name = v
 
-    ###
     @property
     def case_report_dir_name(self):
         self.__case_report_dir_name = '%s%s%s' % (self.__case_dir_name, '@', str(self.__case_start_time).replace(' ', '_'))
         return self.__case_report_dir_name
 
-    #nose frm need
     @property
     def fail_case_report_dir_path(self):
         self.__case_report_dir_path = join(self.__output_failures, self.case_report_dir_name)
@@ -382,14 +368,12 @@ class Timer(object):
         return  isAlive
 
     def progress(self):
-        #return "{:.2%}".format((datetime.datetime.now() - self.__starttime).total_seconds()/self.__duration.total_seconds())
         p = '%0.2f' % (float((datetime.datetime.now() - self.__starttime).total_seconds())/(self.__duration.total_seconds()))
         if float(p) <= float(0):
             return '0.01'
         if float(p) > float(1.0):
             return '1.00'
         else: return p
-        #return '%0.02f' % (float((datetime.datetime.now() - self.__starttime).total_seconds())/(self.__duration.total_seconds()))
 
 class LogHandler(object):
     def __init__(self, bridge='adb', serial=None):
@@ -403,19 +387,16 @@ class LogHandler(object):
     def start(self):
         cmd = None
         exe = _findExetuable(self.__bridge)
-        #serial = os.environ['ANDROID_SERIAL'] if os.environ.has_key('ANDROID_SERIAL') else None
         if self.__serial:
             cmd = ANDROID_LOG_SHELL % (exe, '-s', self.__serial)
         else:
             cmd = ANDROID_LOG_SHELL % (exe, '', '')
-        cmds = shlex.split(cmd)
-        self.__logger_proc = subprocess.Popen(cmds,
+        self.__logger_proc = subprocess.Popen(shlex.split(cmd),
                                               stderr=subprocess.STDOUT,
                                               stdout=subprocess.PIPE,
                                               close_fds=True,
                                               preexec_fn=self.check)
-        #self.__cache_thread = LogCacheWrapper(self.__logger_proc.stdout, self.__cache_queue)
-        self.__cache_thread = LogCacheWrapper(self.__logger_proc, self.__cache_queue, cmds)
+        self.__cache_thread = LogCacheWrapper(self.__logger_proc.stdout, self.__cache_queue)
         self.__cache_thread.setDaemon(True)
         self.__cache_thread.start()
         self.__cache_thread.join(3)
@@ -445,13 +426,6 @@ class LogHandler(object):
     def save(self, path):
         try:
             with open(path, 'w+') as f:
-                #timeout = 0
-                #while self.__cache_queue.qsize() <= 0:
-                #    time.sleep(1)
-                #    timeout += 1
-                #    if timeout == 180:
-                #        break
-                #    continue
                 for i in range(self.__cache_queue.qsize()):
                     line = self.__cache_queue.get(block=True)
                     f.write(line)
@@ -471,22 +445,20 @@ class DmesgLogHandler(object):
         self.__logger_proc = None
         self.__cache_thread = None
         atexit.register(self.exit_subprocess)
-        
+
     def start(self):
         cmd = None
         exe = _findExetuable(self.__bridge)
-        #serial = os.environ['ANDROID_SERIAL'] if os.environ.has_key('ANDROID_SERIAL') else None
         if self.__serial:
             cmd = ANDROID_KMSGLOG_SHELL % (exe, '-s', self.__serial)
         else:
             cmd = ANDROID_KMSGLOG_SHELL % (exe, '', '')
-        cmds = shlex.split(cmd)
-        self.__logger_proc = subprocess.Popen(cmds,
+        self.__logger_proc = subprocess.Popen(shlex.split(cmd),
                                               stderr=subprocess.STDOUT,
                                               stdout=subprocess.PIPE,
                                               close_fds=True,
                                               preexec_fn=self.check)
-        self.__cache_thread = LogCacheWrapper(self.__logger_proc, self.__cache_queue, cmds)
+        self.__cache_thread = LogCacheWrapper(self.__logger_proc.stdout, self.__cache_queue)
         self.__cache_thread.setDaemon(True)
         self.__cache_thread.start()
         self.__cache_thread.join(3)
@@ -516,13 +488,6 @@ class DmesgLogHandler(object):
     def save(self, path):
         try:
             with open(path, 'w+') as f:
-                #timeout = 0
-                #while self.__cache_queue.qsize() <= 0:
-                #    time.sleep(1)
-                #    timeout += 1
-                #    if timeout == 180:
-                #        break
-                #    continue
                 for i in range(self.__cache_queue.qsize()):
                     line = self.__cache_queue.get(block=True)
                     f.write(line)
@@ -535,11 +500,9 @@ class DmesgLogHandler(object):
         self.__cache_queue.queue.clear()
 
 class LogCacheWrapper(threading.Thread):
-    def __init__(self, fd, queue, cmd):
+    def __init__(self, fd, queue):
         threading.Thread.__init__(self)
         self.__fd = fd
-        #self.daemon = True
-        self.__cmd = cmd
         self.__queue = queue
         self.__stop = False
 
@@ -548,29 +511,14 @@ class LogCacheWrapper(threading.Thread):
 
     def run(self):
         while True:
-            for line in iter(self.__fd.stdout.readline, ''):
+            for line in iter(self.__fd.readline, ''):
                 self.__queue.put(line)
-            if self.__fd.poll() == 0:
-                self.__fd = self.restart()
-
-    def restart(self):
-        logger_proc = None
-        while True:
-            logger_proc = subprocess.Popen(self.__cmd,
-                                           stderr=subprocess.STDOUT,
-                                           stdout=subprocess.PIPE,
-                                           close_fds=True)
-            time.sleep(3)
-            if logger_proc.poll() == None:
-                return logger_proc
-            
 
 class ReporterPlugin(nose.plugins.Plugin):
     """
     output test result local and report to server.
     """
     name = 'live-reporter'
-    #score = 200
 
     def __init__(self, counter=None, report_client=None, timer=None):
         super(ReporterPlugin, self).__init__()
@@ -587,32 +535,23 @@ class ReporterPlugin(nose.plugins.Plugin):
         Called to allow plugin to register command line options with the parser. DO NOT return a value from this method unless you want to stop all other plugins from setting their options.        
         """
         super(ReporterPlugin, self).options(parser, env)
-
-        ###local ouput result config###
         parser.add_option('--file-name', 
                           dest='file_name', default='result.txt',
                           help="save output file to this directory")
-
         parser.add_option('--directory', action='store_true',
                           dest='directory', default=self.__getDefault(),
                           help="save output file to this directory. default is current nose worspace")
-
         parser.add_option('--icycle', action='store', type='string', metavar="STRING",
                           dest='icycle', default=None, help="total cycle flag")
-
-        ###report server config###
         parser.add_option('--livereport', action='store_true',
                           dest='livereport', default=False,
                           help="switcher of uploading result to live report server. default is enable the feature")
-
         parser.add_option('--server-config', action='store',  metavar="FILE",
                           dest='livereport_config', default='server.config',
                           help="specify the live report server configuration file path")
-
         parser.add_option('--client-config', action='store',  metavar="FILE",
                           dest='device_config', default='client.config',
                           help="specify the device config file path")
-
         parser.add_option('--duration', dest='duration', type='string', metavar="STRING",
                           action='callback', callback=self.__validate_duration, 
                           help='The minumum test duration before ending the test.\
@@ -678,19 +617,12 @@ class ReporterPlugin(nose.plugins.Plugin):
             self.__configuration.update(_getServerConfiguration(options.livereport_config))
             self.__configuration.update(_getDeviceConfiguration(options.device_config))
             self.__configuration.update({'planname': os.path.basename(self.conf.options.plan_file)})
-
         self.result_properties = {'payload': None, 'extras': None}
-        #if disable report server
         if self.opt.livereport and not self.__report_client:
-            #server_need = {'username':None, 'password':None, 'auth':None, 'session_create':None,
-            #               'session_update':None, 'case_create':None, 'case_update':None, 'file_upload':None}
             self.__report_client =  ReportClient(**self.__configuration)
             self.token = self.__report_client.regist()
             if not self.token:
                 raise Exception("couldn't get token from report server. check report server settings")
-
-        #used to add local report if need
-        #self.result_file = join(_mkdir(self.opt.directory), self.opt.file_name)
 
     def setOutputStream(self, stream):
         """
@@ -734,7 +666,6 @@ class ReporterPlugin(nose.plugins.Plugin):
             self.__log_handler = LogHandler(serial=self.__configuration['deviceid'])
         if not self.__log_handler.available():
             self.__log_handler.start()
-
         if not self.__dmsglog_handler:
             self.__dmsglog_handler = DmesgLogHandler(serial=self.__configuration['deviceid'])
         if not self.__dmsglog_handler.available():
@@ -785,7 +716,6 @@ class ReporterPlugin(nose.plugins.Plugin):
         ctx.case_start_time = self.previous_start_time
         ctx.user_log_dir = join(ctx.case_report_tmp_dir, 'logs')
         path = _mkdir(ctx.user_log_dir)
-
         if self.write_hashes:
             self.__write('#%s %s ' % (str(self.tid), str(ctx.case_start_time)))
 
@@ -839,15 +769,12 @@ class ReporterPlugin(nose.plugins.Plugin):
 
     def addFailure(self, test, err, capt=None, tbinfo=None):
         ctx = self.__getTestCaseContext(test)
-        #ctx.case_end_time = _reportTime()
         etime = _reportTime()
         if getattr(self, 'previous_end_time', '') == etime:
             self.previous_end_time = _reportTime(delay=1)
         else:
             self.previous_end_time = etime
         ctx.case_end_time = self.previous_end_time
-
-        #payload data
         self.result_properties.update({'payload': {'tid': self.tid,
                                                   'casename': ctx.case_dir_name,
                                                   'starttime': ctx.case_start_time,
@@ -856,7 +783,6 @@ class ReporterPlugin(nose.plugins.Plugin):
                                                   'trace':_formatOutput(ctx.case_dir_name, 'fail', err)
                                                   }
                                        })
-
         trace_log_path = join(ctx.user_log_dir, 'trace.txt')
         try:
             with open(trace_log_path, 'wb+') as f:
@@ -876,17 +802,14 @@ class ReporterPlugin(nose.plugins.Plugin):
         if self.opt.livereport:
             self.__report_client.updateTestCase(**self.result_properties)
 
-    #remote upload
     def addError(self, test, err, capt=None):
         ctx = self.__getTestCaseContext(test)
-        #ctx.case_end_time = _reportTime()
         etime = _reportTime()
         if getattr(self, 'previous_end_time', '') == etime:
             self.previous_end_time = _reportTime(delay=1)
         else:
             self.previous_end_time = etime
         ctx.case_end_time = self.previous_end_time
-
         self.result_properties.update({'payload': {'tid': self.tid,
                                                   'casename': ctx.case_dir_name,
                                                   'starttime': ctx.case_start_time,
@@ -915,10 +838,8 @@ class ReporterPlugin(nose.plugins.Plugin):
         if self.opt.livereport:
             self.__report_client.updateTestCase(**self.result_properties)
 
-    #remote upload
     def addSuccess(self, test, capt=None):
         ctx = self.__getTestCaseContext(test)
-        #ctx.case_end_time = _reportTime()
         etime = _reportTime()
         if getattr(self, 'previous_end_time', '') == etime:
             self.previous_end_time = _reportTime(delay=1)
@@ -933,7 +854,6 @@ class ReporterPlugin(nose.plugins.Plugin):
                                                    'result': 'pass'
                                                   }
                                       })
-
         self.result_properties.update({'extras': {'screenshot_at_last': ctx.screenshot_at_pass,
                                                   'log': ctx.pass_log,
                                                   'expect': ctx.expect,
@@ -945,13 +865,11 @@ class ReporterPlugin(nose.plugins.Plugin):
             self.__log_handler.save(log_file)
         except Exception, e:
             logger.debug('error: create trace log file in pass\n%s' % str(e))
-
         try:
             dmesg_log_file = join(ctx.user_log_dir, DMESGLOG_FILE_NAME)
             self.__dmsglog_handler.save(dmesg_log_file)
         except Exception, e:
             logger.debug('error: save dmsg log in pass\n%s' % str(e))
-
         trace_log_path = join(ctx.user_log_dir, 'trace.txt')
         try:
             with open(trace_log_path, 'w+') as f:
