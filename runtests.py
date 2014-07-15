@@ -13,7 +13,7 @@ launcher of testing.
 
 def showUsage():
     print 'usage:'
-    print '\tpython runtests.py [-h|--help] [--cycle CYCLE] [--duration DURATION_TIME] [--timeout TIMEOUT_VALUE_SECONDS] [--livereport] [--livereport-config REPORT_CONFIG] [--device-config DEVICE_CONFIG] [,[argv]]\n\n'
+    print '\tpython runtests.py [-h|--help] [--cycle CYCLE] [--duration DURATION_TIME] [--timeout TIMEOUT_VALUE_SECONDS] [--livereport] [--server-config REPORT_CONFIG] [--client-config DEVICE_CONFIG] [,[argv]]\n\n'
     print 'Process the paramters of runtests'
     print 'optional arguments:'
     print '\t-h, --help            Show this help message and exit\n'
