@@ -186,7 +186,7 @@ def _makeLog(path, bridge='adb', serial=None, result='failure'):
         if serial:
             AdbCommand('%s -s %s shell screencap /sdcard/%s' % (exe, serial, snapshot_name)).run()
             AdbCommand('%s -s %s pull /sdcard/%s %s' % (exe, serial, snapshot_name, path)).run()
-            AdbCommand('%s -s %s pull %s %s' % (exe, serial, ANDROID_TOMBSTONE_PATH, path)).run()            
+            AdbCommand('%s -s %s pull %s %s' % (exe, serial, ANDROID_TOMBSTONE_PATH, path)).run()
             AdbCommand('%s -s %s shell rm %s%s' % (exe, serial, ANDROID_TOMBSTONE_PATH, '/*')).run()
         else:
             AdbCommand('%s shell screencap /sdcard/%s' % (exe, snapshot_name)).run()
@@ -390,7 +390,7 @@ class LogHandler(object):
         self.__logger_proc = None
         self.__cache_thread = None
         atexit.register(self.exit_subprocess)
-        
+
     def start(self):
         cmd = None
         exe = _findExetuable(self.__bridge)
@@ -404,7 +404,6 @@ class LogHandler(object):
                                               stdout=subprocess.PIPE,
                                               close_fds=True,
                                               preexec_fn=self.check)
-        #self.__cache_thread = LogCacheWrapper(self.__logger_proc.stdout, self.__cache_queue)
         self.__cache_thread = LogCacheWrapper(self.__logger_proc, self.__cache_queue, cmds)
         self.__cache_thread.setDaemon(True)
         self.__cache_thread.start()
@@ -454,7 +453,7 @@ class DmesgLogHandler(object):
         self.__logger_proc = None
         self.__cache_thread = None
         atexit.register(self.exit_subprocess)
-        
+
     def start(self):
         cmd = None
         exe = _findExetuable(self.__bridge)
