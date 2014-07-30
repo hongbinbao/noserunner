@@ -1,8 +1,8 @@
 noserunner 1.0
 ==========
 
-runner based on python nose testing framework
-
+a test runner based on python nose testing framework. Used to load, parse, control test case sequence and generate test report.
+support to specify test case execute order  in a good-readable plan file. support to define test case timeout value for each test method. support to fetch logcat/kmsg/snapshot from Android device  in real-time. Support to send the test result  to a remote HTTP server.
 
 
 ### Dependency
