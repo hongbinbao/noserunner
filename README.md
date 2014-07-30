@@ -9,8 +9,7 @@ support to specify test case execute order  in a good-readable plan file. suppor
     sudo pip install nose
 
 ### Installation
-    1: download the latest release from:
-    [RELEASE]: <https://github.com/hongbinbao/noserunner/releases/latest>
+    1: download the latest release from [RELEASE]
     2: unzip it into an avaiable path of HOST
     
 ### Help
@@ -150,3 +149,5 @@ support to specify test case execute order  in a good-readable plan file. suppor
 ### unit test
     $ cd noserunner
     $ python buildtest/ut.py
+
+[RELEASE]: https://github.com/hongbinbao/noserunner/releases/latest
