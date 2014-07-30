@@ -7,6 +7,10 @@ support to specify test case execute order  in a good-readable plan file. suppor
 
 ### Dependency
     sudo pip install nose
+
+### Installation
+    1: download the latest release from https://github.com/hongbinbao/noserunner/releases
+    2: unzip it into an avaiable path of HOST
     
 ### Help
     $ cd noserunner
