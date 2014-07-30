@@ -6,13 +6,15 @@ support to specify test case execute order  in a good-readable plan file. suppor
 
 
 ### Dependency
+
     sudo pip install nose
 
 ### Installation
-    1: download the latest release from [releases]
+    1: download the latest release from [releases](https://github.com/hongbinbao/noserunner/releases/latest)
     2: unzip it into an avaiable path of HOST
     
 ### Help
+
     $ cd noserunner
     $ python runtests.py -h
   
@@ -149,5 +151,3 @@ support to specify test case execute order  in a good-readable plan file. suppor
 ### unit test
     $ cd noserunner
     $ python buildtest/ut.py
-
-[releases]: https://github.com/hongbinbao/noserunner/releases/latest
