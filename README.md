@@ -113,7 +113,7 @@ support to specify test case execute order  in a good-readable plan file. suppor
         python makeconfig.py --help
         
     e.g:
-        python makeconfig.py -s serial_number -f server.config
+        python makeconfig.py -s serial_number -f client.config
 
 ### Demo
 
