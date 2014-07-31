@@ -636,9 +636,10 @@ class ReporterPlugin(nose.plugins.Plugin):
             if self.opt.livereport:
                 if not exists(options.livereport_config):
                     raise Exception("couldn't find the report server local setting file: '%s'" % options.livereport_config)
+                self.__configuration.update(_getServerConfiguration(options.livereport_config))
             if not exists(options.device_config):
                 raise Exception("couldn't find device configuration file: '%s'" % options.device_config)
-            self.__configuration.update(_getServerConfiguration(options.livereport_config))
+            #self.__configuration.update(_getServerConfiguration(options.livereport_config))
             self.__configuration.update(_getDeviceConfiguration(options.device_config))
             self.__configuration.update({'planname': os.path.basename(self.conf.options.plan_file)})
         self.result_properties = {'payload': None, 'extras': None}
