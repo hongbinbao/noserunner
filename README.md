@@ -4,12 +4,12 @@ noserunner 1.0
 a test runner based on python nose testing framework. Used to load, parse, control test case sequence and generate test report.
 support to specify test case execute order  in a good-readable plan file. support to define test case timeout value for each test method. support to fetch "logcat/kmsg/tombstone/snapshot" from Android device  in real-time. Support to send the test result  to a remote HTTP server.
 
-### Host env
-    linux, adb 
-    (windows todo)
+### Host Environment
+    linux, Android "adb" in system $PATH  
+    (For windows: todo)
 
 ### Dependency
-
+    sudo apt-get install -y python-pip 
     sudo pip install nose
 
 ### Installation
