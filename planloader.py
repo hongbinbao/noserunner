@@ -120,6 +120,8 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
         self.conf.workingDir = os.path.dirname(self.plan_file)
         if not os.path.exists(self.plan_file):
             raise Exception('file not found: %s' % self.plan_file)
+        if self.enabled:
+            sys.stderr.write('->'*20 + 'plan loader enabled!\n')
 
 
     def __getTestsFromPlanFile(self, plan_file_path, section_name, cycle):
@@ -132,12 +134,18 @@ class PlanLoaderPlugin(nose.plugins.Plugin):
         #parser.read(plan_file_path)
         #tests = parser.items(section_name)
         tests = readTestsFromConfigFile(plan_file_path, section_name)
-        n = 1
-        while n <= int(cycle): 
-            for (k,v) in tests:
-                for i in range(int(v)):
-                    yield k
-            n += 1
+        #n = 1
+        #while n <= int(cycle): 
+        #    for (k,v) in tests:
+        #        for i in range(int(v)):
+        #            yield k
+        #    n += 1
+        n = 1 
+        for (k,v) in tests:
+            for i in range(int(v)):
+                yield k
+                    #yield unittest.TestLoader().loadTestsFromName(k, None)
+        n += 1
 
     def prepareTestLoader(self, loader):
         """
